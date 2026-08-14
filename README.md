@@ -222,7 +222,7 @@ Ikuti langkah-langkah berikut untuk menjalankan proyek di komputer lokal:
 ### 1. Clone Repository
 ```bash
 git clone https://github.com/ZyuuDev/UKK_E-Teller_Bank_Mini_ArrasydNandaFairuz.git
-cd UKK_E-Teller_Bank_Mini_ArrasydNandaFairuz/Bank-Mini
+cd UKK_E-Teller_Bank_Mini_ArrasydNandaFairuz
 ```
 
 ### 2. Install Dependensi PHP & JavaScript
@@ -281,27 +281,32 @@ Setelah menjalankan `php artisan migrate --seed`, akun uji coba berikut siap dig
 
 ```plaintext
 UKK_E-Teller_Bank_Mini_ArrasydNandaFairuz/
-├── Bank-Mini/                     # Direktori Utama Aplikasi Laravel
-│   ├── app/
-│   │   ├── Http/
-│   │   │   ├── Controllers/
-│   │   │   │   ├── Admin/         # UserController, CustomerController
-│   │   │   │   ├── Teller/        # TransactionController, ReconciliationController
-│   │   │   │   ├── Supervisor/    # ReconciliationController (Approve)
-│   │   │   │   ├── Nasabah/       # AccountController (Balance & Mutasi)
-│   │   │   │   └── AuthController.php
-│   │   │   └── Middleware/        # RBAC Role Middleware
-│   │   └── Models/                # User, Customer, Transaction, JournalEntry, DailyReconciliation
-│   ├── database/
-│   │   ├── migrations/            # Skema 5 Tabel 3NF & Constraints
-│   │   └── seeders/               # DatabaseSeeder Akun Default
-│   ├── routes/
-│   │   ├── api.php                # Definisi Endpoint REST API RBAC
-│   │   └── web.php
-│   └── composer.json
-├── Flowchart_PerRole.md           # Diagram Flowchart Alur Tiap Role
-├── SRS_ETeller_Bank_Mini.md       # Software Requirement Specification Lengkap
-└── README.md                      # Dokumentasi Utama Repositori
+├── app/
+│   ├── Http/
+│   │   ├── Controllers/
+│   │   │   ├── Admin/         # UserController, CustomerController
+│   │   │   ├── Teller/        # TransactionController, ReconciliationController
+│   │   │   ├── Supervisor/    # ReconciliationController (Approve)
+│   │   │   ├── Nasabah/       # AccountController (Balance & Mutasi)
+│   │   │   └── AuthController.php
+│   │   └── Middleware/        # RBAC Role Middleware
+│   └── Models/                # User, Customer, Transaction, JournalEntry, DailyReconciliation
+├── bootstrap/                 # Application Bootstrap & Configuration
+├── config/                    # Application Configuration Files
+├── database/
+│   ├── migrations/            # Skema 5 Tabel 3NF & Constraints
+│   └── seeders/               # DatabaseSeeder Akun Default
+├── public/                    # Web Server Entry Point (index.php)
+├── resources/                 # Views (Blade), CSS, dan JS
+├── routes/
+│   ├── api.php                # Definisi Endpoint REST API RBAC
+│   └── web.php
+├── tests/                     # Unit & Feature Tests
+├── .env.example               # Template Konfigurasi Environment
+├── composer.json              # Dependensi Paket PHP (Laravel & Sanctum)
+├── package.json               # Dependensi Frontend / Vite
+├── vite.config.js             # Konfigurasi Build Vite
+└── README.md                  # Dokumentasi Utama Repositori
 ```
 
 ---
