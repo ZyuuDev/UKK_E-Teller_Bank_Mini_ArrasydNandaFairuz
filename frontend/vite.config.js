@@ -10,8 +10,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       manifest: {
         name: 'E-Teller Bank Mini',
-        short_name: 'E-Teller',
-        description: 'Sistem E-Teller Bank Mini Sekolah',
+        short_name: 'Bank-Mini',
+        description: 'Sistem E-Teller Bank Mini SKANSABA',
         theme_color: '#1e40af',
         background_color: '#0f172a',
         display: 'standalone',
