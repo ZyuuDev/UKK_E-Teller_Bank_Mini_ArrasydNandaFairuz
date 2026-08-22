@@ -1,4 +1,5 @@
 import axios from "axios";
+import { useAuthStore } from "../store/authStore";
 
 const api = axios.create({
     baseURL: '/api',
@@ -8,20 +9,19 @@ const api = axios.create({
     }
 })
 
-//auto tempel token
 api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token')
-    if (token) config.headers.Authorization = `Bearer ${token}`
+    const token = useAuthStore.getState().token
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+    }
     return config
 })
 
-//auto redirek jika 401
 api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user')
+            useAuthStore.getState().clearAuth()
             window.location.href = '/login';
         }
         return Promise.reject(error)

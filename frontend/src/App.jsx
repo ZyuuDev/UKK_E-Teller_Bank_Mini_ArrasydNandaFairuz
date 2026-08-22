@@ -8,7 +8,7 @@ import LoginPage from './pages/auth/LoginPage'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import TellerDashboard from './pages/teller/TellerDashboard'
 import SupervisorDashboard from './pages/supervisor/SupervisorDashboard'
-import NasabahDashboard from './pages/nasabah/NasabahDashboard'
+// import NasabahDashboard from './pages/nasabah/NasabahDashboard'
 
 //komponen
 //children = halamn yang ingin dilindungi
@@ -60,12 +60,12 @@ export default function App() {
           </ProtectedRoute>
         } />
 
-        {/*nasabah*/}
+        {/* nasabah
         <Route path="/nasabah/*" element={
           <ProtectedRoute allowedRoles={['Nasabah']}>
             <NasabahDashboard />
           </ProtectedRoute>
-        } />
+        } /> */}
 
         {/*redirek login*/}
         <Route path="*" element={<Navigate to="/login" replace />} />

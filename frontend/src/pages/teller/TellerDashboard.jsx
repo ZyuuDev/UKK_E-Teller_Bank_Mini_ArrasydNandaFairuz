@@ -6,7 +6,7 @@ import ReconciliationPage from './ReconciliationPage'
 import { useAuthStore } from '../../store/authStore'
 
 export default function TellerDashboard() {
-    // State menu aktif: 'transactions' (default) atau 'reconciliation'
+    //state menu aktif
     const [activePage, setActivePage] = useState('transactions')
     const { user } = useAuthStore()
 
@@ -18,10 +18,10 @@ export default function TellerDashboard() {
     return (
         <div className="flex h-screen bg-slate-950 dark:bg-slate-950">
 
-            {/* ─── SIDEBAR KIRI ──────────────────────────────────────── */}
+            {/*SIDEBAR*/}
             <aside className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col">
 
-                {/* Logo & Brand */}
+                {/*Logo*/}
                 <div className="h-16 flex items-center gap-3 px-6 border-b border-slate-800">
                     <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
                         <Landmark size={16} className="text-white" />
@@ -71,7 +71,6 @@ export default function TellerDashboard() {
                 </div>
             </aside>
 
-            {/* ─── AREA KONTEN KANAN ─────────────────────────────────── */}
             <div className="flex-1 flex flex-col overflow-auto">
                 <Navbar
                     title={
