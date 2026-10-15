@@ -9,26 +9,16 @@ class User extends Authenticatable
 {
     use HasApiTokens;
 
-    protected $fillable = [
-        'username',
-        'password',
-        'name',
-        'role',
-    ];
-
-    protected $hidden = [
-        'password', 'remember_token'
-    ];
+    protected $fillable = ['username', 'password', 'name', 'role', 'is_active', 'must_change_password'];
+    protected $hidden = ['password'];
 
     protected function casts(): array
     {
-        return [
-            'password'=> 'hashed',
-        ];
+        return ['password' => 'hashed', 'is_active' => 'boolean', 'must_change_password' => 'boolean'];
     }
 
-    public function customer()
+    public function member()
     {
-        return $this->hasOne(Customer::class, 'user_id');
+        return $this->hasOne(Member::class, 'user_id');
     }
 }

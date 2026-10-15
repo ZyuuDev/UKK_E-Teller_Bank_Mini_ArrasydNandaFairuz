@@ -4,144 +4,57 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\AuditService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
-    /*
-     * Method: GET
-     * URL: /api/admin/users
-     */
     public function index()
     {
-        // Ambil semua user, urutkan dari terbaru
-        $users = User::orderBy('created_at', 'desc')->get();
-
-        return response()->json([
-            'status' => 'success',
-            'data'   => $users,
-        ], 200);
+        return response()->json(['data' => User::whereIn('role', ['admin', 'teller'])->orderBy('name')->get()]);
     }
 
-    /**
-     * Method: POST
-     * URL: /api/admin/users
-     * Body: { "username": "...", "password": "...", "name": "...", "role": "..." }
-     */
-    public function store(Request $request)
+    public function store(Request $request, AuditService $audit)
     {
-        $validated = $request->validate([
+        $data = $request->validate([
             'username' => 'required|string|max:50|unique:users,username',
-            'password' => 'required|string|min:6',
-            'name'     => 'required|string|max:100',
-            'role'     => 'required|in:Administrator,Teller,Supervisor,Nasabah',
+            'name' => 'required|string|max:100',
+            'password' => 'required|string|min:12|max:100',
+            'role' => 'required|in:admin,teller',
         ]);
-
-        $user = User::create($validated);
-
-        return response()->json([
-            'status'  => 'success',
-            'message' => 'User berhasil dibuat.',
-            'data'    => $user,
-        ], 201);
+        $user = DB::transaction(function () use ($data, $request, $audit) {
+            $user = User::create([...$data, 'is_active' => true, 'must_change_password' => true]);
+            $audit->record($request->user()->id, 'staff.created', 'user', $user->id, ['role' => $user->role]);
+            return $user;
+        });
+        return response()->json(['data' => $user], 201);
     }
 
-    /**
-     * Method: GET
-     * URL: /api/admin/users/{id}
-     */
-    public function show(string $id)
+    public function update(Request $request, User $user, AuditService $audit)
     {
-        $user = User::find($id);
-
-        if (!$user) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'User tidak ditemukan.',
-            ], 404);
-        }
-
-        return response()->json([
-            'status' => 'success',
-            'data'   => $user,
-        ], 200);
+        abort_unless(in_array($user->role, ['admin', 'teller'], true), 404);
+        $data = $request->validate(['name' => 'required|string|max:100', 'is_active' => 'required|boolean']);
+        abort_if($user->id === $request->user()->id && !$data['is_active'], 422, 'Akun sendiri tidak dapat dinonaktifkan.');
+        DB::transaction(function () use ($request, $user, $data, $audit) {
+            $user->update($data);
+            if (!$user->is_active) {
+                $user->tokens()->delete();
+            }
+            $audit->record($request->user()->id, 'staff.updated', 'user', $user->id, $data);
+        });
+        return response()->json(['data' => $user]);
     }
 
-    /**
-     * Method: PUT/PATCH
-     * URL: /api/admin/users/{id}
-     * Body: { "name": "...", "role": "...", "password": "..." (opsional) }
-     */
-    public function update(Request $request, string $id)
+    public function studentAccess(Request $request, User $user, AuditService $audit)
     {
-        // 1. Cari user
-        $user = User::find($id);
-
-        if (!$user) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'User tidak ditemukan.',
-            ], 404);
-        }
-
-        // 2. Validasi input
-        //    Username harus unik kec untuk user ini sendiri
-        $validated = $request->validate([
-            'username' => 'sometimes|string|max:50|unique:users,username,' . $id,
-            'password' => 'sometimes|string|min:6',
-            'name'     => 'sometimes|string|max:100',
-            'role'     => 'sometimes|in:Administrator,Teller,Supervisor,Nasabah',
-        ]);
-
-        // 3. Update data user
-        $user->update($validated);
-
-        // 4. Response sukses
-        return response()->json([
-            'status'  => 'success',
-            'message' => 'User berhasil diperbarui.',
-            'data'    => $user,
-        ], 200);
-    }
-
-    /**
-     * Method: DELETE
-     * URL: /api/admin/users/{id}
-     */
-    public function destroy(string $id)
-    {
-        // 1. Cari user
-        $user = User::find($id);
-
-        if (!$user) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'User tidak ditemukan.',
-            ], 404);
-        }
-
-        // 2. Jangan izinkan admin menghapus dirinya sendiri
-        if ($user->id === auth()->id()) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Tidak bisa menghapus akun sendiri.',
-            ], 403);
-        }
-
-        // 3. Coba hapus — jika gagal karena FK RESTRICT, tangkap error
-        try {
-            $user->delete();
-        } catch (\Illuminate\Database\QueryException $e) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'User tidak bisa dihapus karena masih memiliki data terkait (nasabah/transaksi/rekonsiliasi).',
-            ], 409);
-        }
-
-        // 4. Response sukses
-        return response()->json([
-            'status'  => 'success',
-            'message' => 'User berhasil dihapus.',
-        ], 200);
+        abort_unless($user->role === 'student', 404);
+        $data = $request->validate(['is_active' => 'required|boolean']);
+        DB::transaction(function () use ($request, $user, $data, $audit) {
+            $user->update($data);
+            $user->tokens()->delete();
+            $audit->record($request->user()->id, 'student.access_changed', 'user', $user->id, $data);
+        });
+        return response()->json(['data' => $user]);
     }
 }
