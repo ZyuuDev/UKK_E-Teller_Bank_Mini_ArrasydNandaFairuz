@@ -1,132 +1,107 @@
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { Html5Qrcode } from 'html5-qrcode'
-import { Camera, Upload, Keyboard } from 'lucide-react'
 
 export default function QrScanner({ onResult }) {
-  const [mode, setMode]          = useState('manual')
-  const [manualInput, setManual] = useState('')
-  const [scanning, setScanning]  = useState(false)
-  const html5QrRef = useRef(null)
-
-  //mulai scan via webcam
-  const startWebcam = async () => {
-    if (!html5QrRef.current) {
-      html5QrRef.current = new Html5Qrcode('qr-reader')
-    }
-    setScanning(true)
-    try {
-      await html5QrRef.current.start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: 250 },          
-        (decodedText) => {
-          onResult(decodedText)
-          stopWebcam()
-        },
-        () => {}
-      )
-    } catch {
-      alert('Tidak bisa akses kamera. Gunakan tab Upload atau Manual.')
-      setScanning(false)
-    }
-  }
-
-  const stopWebcam = async () => {
-    if (html5QrRef.current && scanning) {
-      await html5QrRef.current.stop()
-      setScanning(false)
-    }
-  }
-
-  //hentikan kamera saat pindah ke mode lain, nyalakan saat masuk mode webcam
+  const id = 'qr' + useId().replaceAll(':', '')
+  const callback = useRef(onResult)
+  const [mode, setMode] = useState('manual')
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
   useEffect(() => {
-    if (mode !== 'webcam') stopWebcam()
-    if (mode === 'webcam') startWebcam()
-    return () => { stopWebcam() }
-  }, [mode])
-
-  // Handler upload gambar QR
-  const handleUpload = async (e) => {
-    const file = e.target.files[0]
+    callback.current = onResult
+  }, [onResult])
+  useEffect(() => {
+    if (mode !== 'camera') return undefined
+    let disposed = false
+    let accepted = false
+    let scanner
+    async function start() {
+      await Promise.resolve()
+      if (disposed) return
+      scanner = new Html5Qrcode(id)
+      try {
+        await scanner.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: 220 },
+          (value) => {
+            if (disposed || accepted) return
+            accepted = true
+            callback.current(value)
+            setMode('manual')
+          },
+          () => undefined
+        )
+        if (disposed) await scanner.stop()
+      } catch (failure) {
+        if (!disposed)
+          setError(
+            `Kamera belum dapat digunakan. Pilih unggah gambar atau manual. ${String(failure)}`
+          )
+      }
+    }
+    start()
+    return () => {
+      disposed = true
+      if (scanner?.isScanning)
+        scanner
+          .stop()
+          .then(() => scanner.clear())
+          .catch(() => undefined)
+    }
+  }, [mode, id])
+  async function upload(event) {
+    const file = event.target.files?.[0]
     if (!file) return
-
-    //scanner terpisah khusus untuk scan file
-    const scanner = new Html5Qrcode('qr-reader-hidden')
+    setBusy(true)
+    setError('')
+    const scanner = new Html5Qrcode(id)
     try {
-      const result = await scanner.scanFile(file, true)
-      onResult(result)
+      callback.current(await scanner.scanFile(file, false))
     } catch {
-      alert('QR Code tidak terbaca dari gambar. Coba foto yang lebih jelas.')
+      setError('QR tidak terbaca. Pilih gambar yang jelas atau gunakan nomor rekening.')
+    } finally {
+      scanner.clear()
+      setBusy(false)
     }
   }
-
-  const tabs = [
-    { id: 'webcam', label: 'Kamera',  icon: Camera   },
-    { id: 'upload', label: 'Upload',  icon: Upload   },
-    { id: 'manual', label: 'Manual',  icon: Keyboard },
-  ]
-
   return (
-    <div className="bg-slate-800 rounded-2xl p-5 border border-slate-700">
-      {/*tombol tab pemilih mode */}
-      <div className="flex gap-2 mb-4">
-        {tabs.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            onClick={() => setMode(id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ${
-              mode === id
-                ? 'bg-blue-600 text-white'
-                : 'bg-slate-700 text-slate-400 hover:text-white'
-            }`}
-          >
-            <Icon size={14} /> {label}
-          </button>
-        ))}
+    <section style={{ marginTop: 16 }}>
+      <div className="actions">
+        <button
+          type="button"
+          className="secondary"
+          onClick={() => {
+            setError('')
+            setMode('camera')
+          }}
+        >
+          Kamera
+        </button>
+        <button
+          type="button"
+          className="secondary"
+          onClick={() => {
+            setError('')
+            setMode('upload')
+          }}
+        >
+          Unggah QR
+        </button>
+        <button type="button" className="secondary" onClick={() => setMode('manual')}>
+          Hentikan kamera
+        </button>
       </div>
-
-      {/*konten berubah sesuai mode yang aktif */}
-      {mode === 'webcam' && (
-        <div>
-          <div id="qr-reader" className="w-full rounded-xl overflow-hidden" style={{ minHeight: 250 }} />
-          {scanning && (
-            <p className="text-center text-slate-400 text-sm mt-2 animate-pulse">
-              Arahkan QR Code ke kamera...
-            </p>
-          )}
-        </div>
-      )}
-
+      {error && <p role="alert">{error}</p>}
+      <div id={id} style={{ marginTop: 16 }} />
       {mode === 'upload' && (
-        <div className="text-center">
-          {/*div tersembunyi untuk scanner file*/}
-          <div id="qr-reader-hidden" style={{ display: 'none' }} />
-          <label className="cursor-pointer flex flex-col items-center gap-3 p-8 border-2 border-dashed border-slate-600 rounded-xl hover:border-blue-500 transition">
-            <Upload size={32} className="text-slate-400" />
-            <span className="text-slate-400">Klik untuk upload foto QR Code nasabah</span>
-            <input type="file" accept="image/*" onChange={handleUpload} className="hidden" />
-          </label>
-        </div>
+        <label>
+          Pilih gambar QR
+          <input type="file" accept="image/*" disabled={busy} onChange={upload} />
+        </label>
       )}
-
       {mode === 'manual' && (
-        <div className="flex gap-3">
-          <input
-            type="text"
-            value={manualInput}
-            onChange={(e) => setManual(e.target.value)}
-            placeholder="Nomor rekening (BMS-2026-XXXX)"
-            className="flex-1 px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 text-white focus:outline-none focus:border-blue-500"
-            //langsung cari
-            onKeyDown={(e) => e.key === 'Enter' && manualInput && onResult(manualInput)}
-          />
-          <button
-            onClick={() => { if (manualInput) { onResult(manualInput); setManual('') } }}
-            className="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium transition"
-          >
-            Cari
-          </button>
-        </div>
+        <p>Gunakan kolom pencarian nomor siswa atau rekening pada halaman pelayanan.</p>
       )}
-    </div>
+    </section>
   )
 }
