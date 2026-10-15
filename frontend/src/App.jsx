@@ -1,75 +1,143 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useAuthStore } from "./store/authStore";
-import { useThemeStore } from "./store/themeStore";
-import { useEffect } from "react";
+import { useEffect, useState } from 'react'
+import { api, getToken, setToken } from './bank/api'
+import { LoginPage, PasswordPage } from './bank/AuthPages'
+import {
+  ImportPage,
+  LedgerPage,
+  MembersPage,
+  ReportsPage,
+  SaversPage,
+  StaffPage,
+} from './bank/AdminPages'
+import TellerPage from './bank/TellerPage'
+import { Notice } from './bank/ui'
 
-//seluruh halaman
-import LoginPage from './pages/auth/LoginPage'
-import AdminDashboard from './pages/admin/AdminDashboard'
-import TellerDashboard from './pages/teller/TellerDashboard'
-import SupervisorDashboard from './pages/supervisor/SupervisorDashboard'
-// import NasabahDashboard from './pages/nasabah/NasabahDashboard'
-
-//komponen
-//children = halamn yang ingin dilindungi
-//allowedRole = role yg diizinkan aksesnya
-
-function ProtectedRoute({ children, allowedRoles }) {
-  const { token, user } = useAuthStore()
-
-  //redirek ke login
-  if (!token) return <Navigate to="/login" replace />
-
-  //role tidak ssuai
-  if (allowedRoles && !allowedRoles.includes(user?.role)) {
-    return <Navigate to="/login" replace />
-  }
-  return children
+const pages = {
+  members: ['Anggota', MembersPage],
+  imports: ['Impor siswa', ImportPage],
+  savers: ['Penabung', SaversPage],
+  reports: ['Laporan kas', ReportsPage],
+  journals: ['Jurnal', LedgerPage],
+  audit: ['Audit', LedgerPage],
+  staff: ['Petugas', StaffPage],
 }
 
 export default function App() {
-  const { isDark } = useThemeStore()
+  const [user, setUser] = useState(null)
+  const [page, setPage] = useState('members')
+  const [loading, setLoading] = useState(!!getToken())
+  const [error, setError] = useState('')
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', isDark)
-  }, [isDark])
-
+    let active = true
+    if (getToken())
+      api('/auth/me')
+        .then((result) => {
+          if (active) setUser(result.data)
+        })
+        .catch((failure) => {
+          if (active) setError(failure.message)
+        })
+        .finally(() => {
+          if (active) setLoading(false)
+        })
+    const expired = () => {
+      setToken(null)
+      setUser(null)
+    }
+    window.addEventListener('bank-auth-expired', expired)
+    return () => {
+      active = false
+      window.removeEventListener('bank-auth-expired', expired)
+    }
+  }, [])
+  async function logout() {
+    try {
+      await api('/auth/logout', { method: 'POST' })
+    } catch (failure) {
+      setError(failure.message)
+    } finally {
+      setToken(null)
+      setUser(null)
+    }
+  }
+  if (loading)
+    return (
+      <main className="login-page">
+        <p role="status">Memeriksa sesi...</p>
+      </main>
+    )
+  if (!user)
+    return (
+      <>
+        <Notice error>{error}</Notice>
+        <LoginPage
+          onAuth={(value) => {
+            setUser(value)
+            setError('')
+          }}
+        />
+      </>
+    )
+  if (user.must_change_password) return <PasswordPage onAuth={setUser} />
+  if (!['admin', 'teller'].includes(user.role))
+    return (
+      <main className="login-page">
+        <section className="panel">
+          <p>Gunakan aplikasi mobile untuk akun siswa.</p>
+          <button onClick={logout}>Keluar</button>
+        </section>
+      </main>
+    )
+  const Page = pages[page][1]
   return (
-    <BrowserRouter>
-      <Routes>
-        {/*login*/}
-        <Route path="/login" element={<LoginPage />} />
-
-        {/*admin*/}
-        <Route path="/admin/*" element={
-          <ProtectedRoute allowedRoles={['Administrator']}>
-            <AdminDashboard />
-          </ProtectedRoute>
-        } />
-
-        {/*teller*/}
-        <Route path="/teller/*" element={
-          <ProtectedRoute allowedRoles={['Teller']}>
-            <TellerDashboard />
-          </ProtectedRoute>
-        } />
-
-        {/*supervisor*/}
-        <Route path="/supervisor/*" element={
-          <ProtectedRoute allowedRoles={['Supervisor']}>
-            <SupervisorDashboard />
-          </ProtectedRoute>
-        } />
-
-        {/* nasabah
-        <Route path="/nasabah/*" element={
-          <ProtectedRoute allowedRoles={['Nasabah']}>
-            <NasabahDashboard />
-          </ProtectedRoute>
-        } /> */}
-
-        {/*redirek login*/}
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <div className="app-shell">
+      <aside className="sidebar">
+        <strong>Bank Mini</strong>
+        <p>SMKN 1 Bantul</p>
+        <nav aria-label="Menu utama">
+          {user.role === 'admin' ? (
+            Object.entries(pages).map(([key, [label]]) => (
+              <button
+                key={key}
+                aria-current={page === key ? 'page' : undefined}
+                onClick={() => setPage(key)}
+              >
+                {label}
+              </button>
+            ))
+          ) : (
+            <button aria-current="page">Pelayanan teller</button>
+          )}
+        </nav>
+      </aside>
+      <div className="workspace">
+        <header className="topbar">
+          <p>
+            <strong>{user.name}</strong>
+            <br />
+            <small>{user.role === 'admin' ? 'Administrator' : 'Teller'}</small>
+          </p>
+          <button className="secondary" onClick={logout}>
+            Keluar
+          </button>
+        </header>
+        <main className="content">
+          <div className="page-head">
+            <h1>{user.role === 'admin' ? pages[page][0] : 'Pelayanan tabungan siswa'}</h1>
+            <p>
+              {user.role === 'admin'
+                ? 'Kelola data dan periksa kegiatan bank mini sekolah.'
+                : 'Pastikan identitas siswa, nominal, dan uang fisik sesuai sebelum menyimpan.'}
+            </p>
+          </div>
+          <Notice error>{error}</Notice>
+          {user.role === 'admin' ? (
+            <Page key={page} audit={page === 'audit'} />
+          ) : (
+            <TellerPage tellerId={user.id} />
+          )}
+        </main>
+      </div>
+    </div>
   )
 }
