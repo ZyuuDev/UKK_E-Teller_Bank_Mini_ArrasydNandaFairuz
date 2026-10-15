@@ -6,31 +6,20 @@ use Illuminate\Database\Eloquent\Model;
 
 class DailyReconciliation extends Model
 {
-    protected $fillable = [
-        'teller_id',
-        'supervisor_id',
-        'date',
-        'opening_balance',
-        'total_deposits',
-        'total_withdrawals',
-        'expected_closing_balance',
-        'actual_cash_on_hand',
-        'discrepancy',
-        'status',
-        'approved_at',
-    ];
+    protected $guarded = ['id'];
 
     protected function casts(): array
     {
         return [
-            'date'                     => 'date',
-            'opening_balance'          => 'decimal:2',
-            'total_deposits'           => 'decimal:2',
-            'total_withdrawals'        => 'decimal:2',
-            'expected_closing_balance' => 'decimal:2',
-            'actual_cash_on_hand'      => 'decimal:2',
-            'discrepancy'              => 'decimal:2',
-            'approved_at'              => 'datetime', // waktu approval supervisor
+            'date' => 'date:Y-m-d',
+            'opening_balance' => 'integer',
+            'total_deposits' => 'integer',
+            'total_withdrawals' => 'integer',
+            'expected_closing_balance' => 'integer',
+            'actual_cash_on_hand' => 'integer',
+            'discrepancy' => 'integer',
+            'approved_at' => 'datetime',
+            'rejected_at' => 'datetime',
         ];
     }
 
@@ -38,8 +27,9 @@ class DailyReconciliation extends Model
     {
         return $this->belongsTo(User::class, 'teller_id');
     }
-    public function supervisor()
+
+    public function approver()
     {
-        return $this->belongsTo(User::class, 'supervisor_id');
+        return $this->belongsTo(User::class, 'approved_by');
     }
 }

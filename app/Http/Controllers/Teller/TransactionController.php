@@ -3,143 +3,72 @@
 namespace App\Http\Controllers\Teller;
 
 use App\Http\Controllers\Controller;
-use App\Models\Customer;
-use App\Services\TransactionService;
+use App\Models\Member;
+use App\Models\Saver;
+use App\Models\Transaction;
+use App\Services\BankingService;
 use Illuminate\Http\Request;
 
 class TransactionController extends Controller
 {
-    protected $transactionService;
-
-    public function __construct(TransactionService $transactionService)
-    {
-        $this->transactionService = $transactionService;
-    }
-
-    /**
-     * Cari nasabah berdasarkan nomor rekening atau QR token
-     * Method: GET
-     * URL: /api/teller/search?account_number=BMS-2026-0001
-     * URL: /api/teller/search?qr_token=550e8400-...
-     */
     public function search(Request $request)
     {
-        $customer = null;
-
-        // Cari berdasarkan nomor rekening (input manual)
-        if ($request->has('account_number')) {
-            $customer = Customer::where('account_number', $request->account_number)->first();
-        }
-
-        // Cari berdasarkan QR token (hasil scan QR Code)
-        if ($request->has('qr_token')) {
-            $customer = Customer::where('qr_code_token', $request->qr_token)->first();
-        }
-
-        // Tidak ditemukan
-        if (!$customer) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Nasabah tidak ditemukan. Periksa kembali nomor rekening atau QR Code.',
-            ], 404);
-        }
-
-        // Ditemukan — kirim data profil nasabah
-        return response()->json([
-            'status' => 'success',
-            'data'   => [
-                'id'             => $customer->id,
-                'account_number' => $customer->account_number,
-                'full_name'      => $customer->full_name,
-                'class_name'     => $customer->class_name,
-                'balance'        => $customer->balance,
-            ],
-        ], 200);
+        $data = $request->validate(['q' => 'required|string|max:100']);
+        $query = $data['q'];
+        $saver = Saver::where('account_number', $query)->orWhere('qr_code_token', $query)->first();
+        $member = $saver?->member ?? Member::where('student_number', $query)->first();
+        abort_unless($member, 404, 'Anggota tidak ditemukan. Gunakan nomor siswa, nomor rekening, atau QR.');
+        $saver = $saver ?? $member->saver;
+        return response()->json(['data' => [
+            'member' => $member->only(['user_id', 'student_number', 'full_name', 'graduation_year', 'account_status']),
+            'saver' => $member->account_status === 'active' ? $saver?->profile() : null,
+        ]]);
     }
 
-    /** input setoran tunai
-     * Method: POST
-     * URL: /api/teller/deposit
-     * Body: {
-     *   "account_number": "BMS-2026-0001",
-     *   "amount": 100000,
-     *   "notes": "Setoran bulanan"  (opsional)
-     * }
-     */
-    public function deposit(Request $request)
+    public function activate(Request $request, BankingService $bank)
     {
-        // 1. Validasi input
-        $request->validate([
-            'account_number' => 'required|string',
-            'amount'         => 'required|numeric|gt:0',
-            'notes'          => 'nullable|string',
+        $data = $request->validate([
+            'member_id' => 'required|integer|exists:members,user_id',
+            'amount' => 'required|integer|min:10000|max:1000000000000',
+            'security_pin' => 'required|string|digits:6',
+            'request_id' => 'required|uuid',
         ]);
-
-        // 2. Panggil TransactionService
-        $transaction = $this->transactionService->deposit(
-            $request->account_number,
-            $request->amount,
-            auth()->id(),
-            $request->notes
-        );
-
-        // 3. Response sukses
-        return response()->json([
-            'status'  => 'success',
-            'message' => 'Setoran tunai berhasil dicatat.',
-            'data'    => [
-                'transaction_id'   => $transaction->id,
-                'transaction_type' => $transaction->transaction_type,
-                'amount'           => $transaction->amount,
-                'date'             => $transaction->date->format('d/m/Y'),
-                'customer'         => $transaction->customer,
-                'notes'            => $transaction->notes,
-            ],
-        ], 201);
+        $transaction = $bank->activate((int) $data['member_id'], (int) $data['amount'], $data['security_pin'], $request->user()->id, $data['request_id']);
+        return response()->json(['data' => $transaction->receipt()], 201);
     }
 
-    /**
-     * Input penarikan tunai
-     * Method: POST
-     * URL: /api/teller/withdraw
-     * Body: {
-     *   "account_number": "BMS-2026-0001",
-     *   "amount": 50000,
-     *   "security_pin": "123456",
-     *   "notes": "Penarikan dana"  (opsional)
-     * }
-     */
-    public function withdraw(Request $request)
+    public function deposit(Request $request, BankingService $bank)
     {
-        // 1. Validasi input
-        $request->validate([
-            'account_number' => 'required|string',
-            'amount'         => 'required|numeric|gt:0',
-            'security_pin'   => 'required|digits:6',
-            'notes'          => 'nullable|string',
+        return $this->perform($request, $bank, 'Deposit');
+    }
+
+    public function withdraw(Request $request, BankingService $bank)
+    {
+        return $this->perform($request, $bank, 'Withdrawal');
+    }
+
+    private function perform(Request $request, BankingService $bank, string $type)
+    {
+        $data = $request->validate([
+            'account_number' => 'required|string|max:20',
+            'amount' => 'required|integer|min:1|max:1000000000000',
+            'security_pin' => $type === 'Withdrawal' ? 'required|string|digits:6' : 'nullable|string',
+            'notes' => 'nullable|string|max:255',
+            'request_id' => 'required|uuid',
         ]);
+        $transaction = $bank->transact($data['account_number'], (int) $data['amount'], $type, $data['security_pin'] ?? null, $request->user()->id, $data['request_id'], $data['notes'] ?? null);
+        return response()->json(['data' => $transaction->receipt()], 201);
+    }
 
-        // 2. Panggil TransactionService
-        $transaction = $this->transactionService->withdraw(
-            $request->account_number,
-            $request->amount,
-            $request->security_pin,
-            auth()->id(),
-            $request->notes
-        );
+    public function receipt(Request $request, Transaction $transaction)
+    {
+        abort_unless($transaction->teller_id === $request->user()->id, 404);
+        return response()->json(['data' => $transaction->receipt()]);
+    }
 
-        // 3. Response sukses
-        return response()->json([
-            'status'  => 'success',
-            'message' => 'Penarikan tunai berhasil dicatat.',
-            'data'    => [
-                'transaction_id'   => $transaction->id,
-                'transaction_type' => $transaction->transaction_type,
-                'amount'           => $transaction->amount,
-                'date'             => $transaction->date->format('d/m/Y'),
-                'customer'         => $transaction->customer,
-                'notes'            => $transaction->notes,
-            ],
-        ], 201);
+    public function byRequest(Request $request, string $requestId)
+    {
+        $transaction = Transaction::where('request_id', $requestId)->where('teller_id', $request->user()->id)->firstOrFail();
+        return response()->json(['data' => $transaction->receipt()]);
     }
 }
