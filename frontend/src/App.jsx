@@ -1,30 +1,86 @@
 import { useEffect, useState } from 'react'
+import {
+  BookOpen,
+  ClipboardCheck,
+  FileUp,
+  Landmark,
+  LayoutDashboard,
+  ShieldCheck,
+  Users,
+  UsersRound,
+  Wallet,
+} from 'lucide-react'
 import { api, getToken, setToken } from './bank/api'
 import { LoginPage, PasswordPage } from './bank/AuthPages'
 import {
   ImportPage,
   LedgerPage,
   MembersPage,
+  OverviewPage,
   ReportsPage,
   SaversPage,
   StaffPage,
 } from './bank/AdminPages'
 import TellerPage from './bank/TellerPage'
-import { Notice } from './bank/ui'
+import AppShell from './bank/layout/AppShell'
+import { Button, Notice, PageHeader } from './bank/ui'
+import './bank/redesign.css'
 
 const pages = {
-  members: ['Anggota', MembersPage],
-  imports: ['Impor siswa', ImportPage],
-  savers: ['Penabung', SaversPage],
-  reports: ['Laporan kas', ReportsPage],
-  journals: ['Jurnal', LedgerPage],
-  audit: ['Audit', LedgerPage],
-  staff: ['Petugas', StaffPage],
+  overview: {
+    label: 'Ringkasan',
+    group: 'Utama',
+    icon: LayoutDashboard,
+    component: OverviewPage,
+  },
+  members: {
+    label: 'Kelola anggota',
+    group: 'Data sekolah',
+    icon: Users,
+    component: MembersPage,
+  },
+  imports: {
+    label: 'Impor siswa',
+    group: 'Data sekolah',
+    icon: FileUp,
+    component: ImportPage,
+  },
+  savers: {
+    label: 'Rekening penabung',
+    group: 'Data sekolah',
+    icon: Landmark,
+    component: SaversPage,
+  },
+  reports: {
+    label: 'Laporan kas',
+    group: 'Pengawasan',
+    icon: ClipboardCheck,
+    component: ReportsPage,
+  },
+  journals: {
+    label: 'Jurnal akuntansi',
+    group: 'Pengawasan',
+    icon: BookOpen,
+    component: LedgerPage,
+  },
+  audit: {
+    label: 'Audit aktivitas',
+    group: 'Pengawasan',
+    icon: ShieldCheck,
+    component: LedgerPage,
+  },
+  staff: {
+    label: 'Petugas',
+    group: 'Administrasi',
+    icon: UsersRound,
+    component: StaffPage,
+  },
 }
+const navigation = Object.entries(pages).map(([key, value]) => ({ key, ...value }))
 
 export default function App() {
   const [user, setUser] = useState(null)
-  const [page, setPage] = useState('members')
+  const [page, setPage] = useState('overview')
   const [loading, setLoading] = useState(!!getToken())
   const [error, setError] = useState('')
   useEffect(() => {
@@ -74,6 +130,7 @@ export default function App() {
           onAuth={(value) => {
             setUser(value)
             setError('')
+            setPage('overview')
           }}
         />
       </>
@@ -82,62 +139,40 @@ export default function App() {
   if (!['admin', 'teller'].includes(user.role))
     return (
       <main className="login-page">
-        <section className="panel">
+        <section className="bank-panel">
           <p>Gunakan aplikasi mobile untuk akun siswa.</p>
-          <button onClick={logout}>Keluar</button>
+          <Button onClick={logout}>Keluar</Button>
         </section>
       </main>
     )
-  const Page = pages[page][1]
+  const isAdmin = user.role === 'admin'
+  const Page = pages[page].component
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <strong>Bank Mini</strong>
-        <p>SMKN 1 Bantul</p>
-        <nav aria-label="Menu utama">
-          {user.role === 'admin' ? (
-            Object.entries(pages).map(([key, [label]]) => (
-              <button
-                key={key}
-                aria-current={page === key ? 'page' : undefined}
-                onClick={() => setPage(key)}
-              >
-                {label}
-              </button>
-            ))
-          ) : (
-            <button aria-current="page">Pelayanan teller</button>
-          )}
-        </nav>
-      </aside>
-      <div className="workspace">
-        <header className="topbar">
-          <p>
-            <strong>{user.name}</strong>
-            <br />
-            <small>{user.role === 'admin' ? 'Administrator' : 'Teller'}</small>
-          </p>
-          <button className="secondary" onClick={logout}>
-            Keluar
-          </button>
-        </header>
-        <main className="content">
-          <div className="page-head">
-            <h1>{user.role === 'admin' ? pages[page][0] : 'Pelayanan tabungan siswa'}</h1>
-            <p>
-              {user.role === 'admin'
-                ? 'Kelola data dan periksa kegiatan bank mini sekolah.'
-                : 'Pastikan identitas siswa, nominal, dan uang fisik sesuai sebelum menyimpan.'}
-            </p>
-          </div>
-          <Notice error>{error}</Notice>
-          {user.role === 'admin' ? (
-            <Page key={page} audit={page === 'audit'} />
-          ) : (
-            <TellerPage tellerId={user.id} />
-          )}
-        </main>
-      </div>
-    </div>
+    <AppShell
+      user={user}
+      navigation={
+        isAdmin
+          ? navigation
+          : [{ key: 'teller', label: 'Pelayanan teller', group: 'Layanan', icon: Wallet }]
+      }
+      page={isAdmin ? page : 'teller'}
+      onNavigate={(key) => {
+        if (isAdmin) setPage(key)
+      }}
+      onLogout={logout}
+    >
+      <Notice error>{error}</Notice>
+      {isAdmin ? (
+        <Page key={page} audit={page === 'audit'} currentUser={user} />
+      ) : (
+        <>
+          <PageHeader
+            title="Pelayanan teller"
+            description="Periksa identitas, nominal, dan uang fisik sebelum menyimpan transaksi."
+          />
+          <TellerPage key={user.id} tellerId={user.id} />
+        </>
+      )}
+    </AppShell>
   )
 }

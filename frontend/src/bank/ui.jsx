@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react'
+import { cloneElement, isValidElement, useEffect, useId, useRef } from 'react'
+import { LoaderCircle, Search, X } from 'lucide-react'
 import { money } from './api'
 
 const labels = {
@@ -11,70 +12,275 @@ const labels = {
   open: 'Terbuka',
   submitted: 'Diajukan',
   valid: 'Valid',
-  invalid: 'Perlu diperbaiki',
+  invalid: 'Tidak valid',
   duplicate: 'Duplikat',
+  service_active: 'Akses aktif',
+  service_blocked: 'Akses diblokir',
+}
+
+export function Button({
+  variant = 'primary',
+  busy = false,
+  disabled,
+  className = '',
+  children,
+  type = 'button',
+  ...props
+}) {
+  return (
+    <button
+      {...props}
+      type={type}
+      disabled={disabled || busy}
+      aria-busy={busy || undefined}
+      className={`bank-button bank-button--${variant} ${className}`}
+    >
+      {busy && <LoaderCircle size={16} className="bank-spin" aria-hidden="true" />}
+      {children}
+    </button>
+  )
+}
+
+export function Input(props) {
+  return <input {...props} />
+}
+export function Select({ children, ...props }) {
+  return <select {...props}>{children}</select>
+}
+
+export function FormField({ label, hint, children }) {
+  const hintId = useId()
+  const control =
+    hint && isValidElement(children)
+      ? cloneElement(children, {
+          'aria-describedby': [children.props['aria-describedby'], hintId]
+            .filter(Boolean)
+            .join(' '),
+        })
+      : children
+  return (
+    <div className="bank-field">
+      <label>
+        <span>{label}</span>
+        {control}
+      </label>
+      {hint && <small id={hintId}>{hint}</small>}
+    </div>
+  )
+}
+
+export function SearchField({ label = 'Cari', ...props }) {
+  return (
+    <label className="bank-search">
+      <span>{label}</span>
+      <span className="bank-search__input">
+        <Search size={18} aria-hidden="true" />
+        <Input {...props} type="search" />
+      </span>
+    </label>
+  )
+}
+
+export function PageHeader({ title, description, actions }) {
+  return (
+    <header className="bank-page-header">
+      <div>
+        <h1>{title}</h1>
+        {description && <p>{description}</p>}
+      </div>
+      {actions && <div className="bank-actions">{actions}</div>}
+    </header>
+  )
+}
+
+export function StatCard({ label, value, icon: Icon }) {
+  return (
+    <section className="bank-stat">
+      {Icon && (
+        <span className="bank-stat__icon">
+          <Icon size={20} aria-hidden="true" />
+        </span>
+      )}
+      <div>
+        <p>{label}</p>
+        <strong className="bank-stat__value">{value ?? 'Tidak tersedia'}</strong>
+      </div>
+    </section>
+  )
 }
 
 export function Status({ value }) {
-  return <span className={`status ${value}`}>{labels[value] || value}</span>
+  const tone = ['active', 'approved', 'valid', 'service_active'].includes(value)
+    ? 'success'
+    : ['disputed', 'invalid', 'service_blocked'].includes(value)
+      ? 'danger'
+      : ['pending', 'submitted', 'duplicate'].includes(value)
+        ? 'warning'
+        : 'neutral'
+  return (
+    <span className={`bank-status bank-status--${tone}`}>
+      {labels[value] || value || 'Tidak tersedia'}
+    </span>
+  )
 }
 
 export function Notice({ error, children }) {
   return children ? (
-    <div className={`notice ${error ? 'error' : ''}`} role={error ? 'alert' : 'status'}>
+    <div
+      className={`bank-notice ${error ? 'bank-notice--error' : ''}`}
+      role={error ? 'alert' : 'status'}
+    >
       {children}
     </div>
   ) : null
 }
 
-export function Modal({ open, title, onClose, children }) {
+export function EmptyState({
+  title = 'Belum ada data',
+  description = 'Data yang sesuai akan tampil di sini.',
+  action,
+}) {
+  return (
+    <div className="bank-empty">
+      <h3>{title}</h3>
+      <p>{description}</p>
+      {action}
+    </div>
+  )
+}
+
+export function LoadingSkeleton() {
+  return (
+    <div className="bank-skeleton" role="status" aria-label="Memuat data">
+      <span />
+      <span />
+      <span />
+    </div>
+  )
+}
+
+export function ResourceState({ resource, children }) {
+  if (resource.loading) return <LoadingSkeleton />
+  if (resource.error)
+    return (
+      <Notice error>
+        {resource.error}
+        <div className="bank-actions">
+          <Button variant="secondary" onClick={resource.refresh}>
+            Coba lagi
+          </Button>
+        </div>
+      </Notice>
+    )
+  return children
+}
+
+export function Modal({
+  open,
+  title,
+  onClose,
+  busy = false,
+  variant = 'modal',
+  children,
+}) {
   const ref = useRef(null)
+  const titleId = useId()
   useEffect(() => {
-    if (open && !ref.current.open) ref.current.showModal()
-    if (!open && ref.current.open) ref.current.close()
+    const dialog = ref.current
+    if (open && !dialog.open) dialog.showModal()
+    if (!open && dialog.open) dialog.close()
   }, [open])
   return (
     <dialog
       ref={ref}
+      aria-labelledby={titleId}
+      className={`bank-overlay bank-overlay--${variant}`}
       onCancel={(event) => {
         event.preventDefault()
-        onClose()
+        if (!busy) onClose()
       }}
-      aria-label={title}
     >
-      <div
-        className="actions"
-        style={{ justifyContent: 'space-between', marginBottom: 20 }}
-      >
-        <h2 style={{ margin: 0 }}>{title}</h2>
-        <button className="secondary" onClick={onClose} type="button">
-          Tutup
-        </button>
+      <div className="bank-overlay__header">
+        <h2 id={titleId}>{title}</h2>
+        <Button
+          variant="secondary"
+          disabled={busy}
+          onClick={onClose}
+          aria-label={`Tutup ${title}`}
+        >
+          <X size={18} aria-hidden="true" />
+          <span>Tutup</span>
+        </Button>
       </div>
-      {children}
+      <div className="bank-overlay__body">{open ? children : null}</div>
     </dialog>
   )
 }
 
-export function DataTable({ rows, columns, actions }) {
-  if (!rows?.length) return <p className="muted">Belum ada data yang sesuai.</p>
+export function Drawer(props) {
+  return <Modal {...props} variant="drawer" />
+}
+
+export function ConfirmDialog({
+  open,
+  title,
+  children,
+  onClose,
+  onConfirm,
+  busy,
+  error,
+  confirmLabel = 'Konfirmasi',
+  danger = false,
+}) {
   return (
-    <div className="table-scroll">
-      <table>
+    <Modal open={open} title={title} busy={busy} onClose={onClose}>
+      {children}
+      <Notice error>{error}</Notice>
+      <div className="bank-actions bank-actions--end">
+        <Button variant="secondary" disabled={busy} onClick={onClose}>
+          Batal
+        </Button>
+        <Button variant={danger ? 'danger' : 'primary'} busy={busy} onClick={onConfirm}>
+          {confirmLabel}
+        </Button>
+      </div>
+    </Modal>
+  )
+}
+
+export function DetailRow({ label, children }) {
+  return (
+    <div className="bank-detail-row">
+      <dt>{label}</dt>
+      <dd>{children ?? 'Tidak tersedia'}</dd>
+    </div>
+  )
+}
+
+export function DataTable({ rows, columns, actions, caption = 'Daftar data' }) {
+  if (!rows?.length) return <EmptyState />
+  return (
+    <div className="bank-table-scroll" tabIndex={0} role="region" aria-label={caption}>
+      <table className="bank-table">
+        <caption className="bank-sr-only">{caption}</caption>
         <thead>
           <tr>
-            {columns.map(([key, label]) => (
-              <th key={key}>{label}</th>
+            {columns.map(([key, label, type]) => (
+              <th key={key} scope="col" className={type === 'money' ? 'money' : ''}>
+                {label}
+              </th>
             ))}
-            {actions && <th>Tindakan</th>}
+            {actions && <th scope="col">Tindakan</th>}
           </tr>
         </thead>
         <tbody>
           {rows.map((row) => (
             <tr key={row.id ?? row.user_id ?? row.row}>
-              {columns.map(([key, , type]) => (
+              {columns.map(([key, , type, render]) => (
                 <td key={key} className={type === 'money' ? 'money' : ''}>
-                  {type === 'money' ? (
+                  {render ? (
+                    render(row)
+                  ) : type === 'money' ? (
                     money(row[key])
                   ) : type === 'status' ? (
                     <Status value={row[key]} />
@@ -89,8 +295,8 @@ export function DataTable({ rows, columns, actions }) {
                 </td>
               ))}
               {actions && (
-                <td className="actions-cell">
-                  <div className="actions">{actions(row)}</div>
+                <td>
+                  <div className="bank-actions">{actions(row)}</div>
                 </td>
               )}
             </tr>
@@ -102,25 +308,35 @@ export function DataTable({ rows, columns, actions }) {
 }
 
 export function Pager({ data, page, onChange }) {
-  return data?.last_page > 1 ? (
-    <div className="actions" style={{ marginTop: 16 }}>
-      <button
-        className="secondary"
-        disabled={page <= 1}
-        onClick={() => onChange(page - 1)}
-      >
-        Sebelumnya
-      </button>
-      <span>
-        Halaman {page} dari {data.last_page}
-      </span>
-      <button
-        className="secondary"
-        disabled={page >= data.last_page}
-        onClick={() => onChange(page + 1)}
-      >
-        Berikutnya
-      </button>
+  if (!data) return null
+  return (
+    <div className="bank-pager">
+      <small>
+        {data.total > 0
+          ? `Menampilkan ${data.from}–${data.to} dari ${data.total} data`
+          : '0 data'}
+      </small>
+      {data.last_page > 1 && (
+        <div className="bank-actions">
+          <Button
+            variant="secondary"
+            disabled={page <= 1}
+            onClick={() => onChange(page - 1)}
+          >
+            Sebelumnya
+          </Button>
+          <span>
+            Halaman {page} / {data.last_page}
+          </span>
+          <Button
+            variant="secondary"
+            disabled={page >= data.last_page}
+            onClick={() => onChange(page + 1)}
+          >
+            Berikutnya
+          </Button>
+        </div>
+      )}
     </div>
-  ) : null
+  )
 }

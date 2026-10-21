@@ -1,0 +1,104 @@
+.bank-auth {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.9fr) minmax(0, 1.1fr);
+  min-height: 100dvh;
+  background: var(--surface);
+}
+.bank-auth__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 40px;
+  padding: 40px clamp(32px, 5vw, 80px);
+  background: linear-gradient(150deg, #f8fbff 0%, var(--subtle-blue) 100%);
+  border-right: 1px solid var(--border);
+}
+.bank-auth__brand > img {
+  width: min(246px, 100%);
+  height: auto;
+  object-fit: contain;
+}
+.bank-auth__brand h2 {
+  font-size: clamp(28px, 2.8vw, 42px);
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+}
+.bank-auth__brand p:not(.bank-auth__eyebrow) {
+  color: var(--text-secondary);
+  max-width: 42ch;
+}
+.bank-auth__eyebrow {
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  color: var(--action);
+  margin-bottom: 16px;
+}
+.bank-auth__content {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  padding: 48px 32px;
+}
+.bank-auth__form {
+  width: min(420px, 100%);
+}
+.bank-auth__form > header {
+  margin-bottom: 28px;
+}
+.bank-auth__form > header h1 {
+  font-size: 28px;
+  line-height: 36px;
+}
+.bank-auth__form > header p {
+  color: var(--text-secondary);
+  margin-bottom: 0;
+}
+.bank-auth__form .bank-form > button {
+  width: 100%;
+}
+.bank-auth__links {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+.bank-auth__links > button {
+  width: 100%;
+}
+.bank-auth__footer {
+  margin: 32px 0 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+.bank-auth__mobile-logo {
+  display: none;
+}
+.bank-auth__email {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 767px) {
+  .bank-auth {
+    display: block;
+  }
+  .bank-auth__brand {
+    display: none;
+  }
+  .bank-auth__content {
+    min-height: 100dvh;
+    padding: 24px 20px 40px;
+  }
+  .bank-auth__mobile-logo {
+    display: block;
+    height: auto;
+    margin: 0 auto 24px;
+    object-fit: contain;
+  }
+  .bank-auth__form > header h1 {
+    font-size: 24px;
+    line-height: 32px;
+  }
+}

@@ -1,356 +1,703 @@
 :root {
-  font-family: 'Segoe UI', Arial, sans-serif;
-  color: #18332b;
-  background: #f4f7f4;
+  color-scheme: light;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  color: #111b35;
+  background: #f7f9fc;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  --brand: #146c4f;
-  --brand-dark: #103f32;
-  --line: #d5ded8;
-  --muted: #52665c;
+
+  --font-body: 'Inter', 'Segoe UI', Arial, sans-serif;
+  --font-heading: 'Plus Jakarta Sans', 'Inter', 'Segoe UI', sans-serif;
+  --brand: #1677ff;
+  --action: #095ce5;
+  --action-hover: #084ec4;
+  --text: #111b35;
+  --text-secondary: #52627a;
+  --background: #f7f9fc;
+  --surface: #ffffff;
+  --surface-subdued: #fafbfd;
+  --subtle-blue: #eef5ff;
+  --border: #e7ecf3;
+  --control-border: #7b8ba5;
+  --success-text: #0d8059;
+  --success-tint: #eaf8f2;
+  --warning-text: #a65b00;
+  --warning-tint: #fff4df;
+  --danger-text: #b4233c;
+  --danger-tint: #fff0f2;
+  --radius-control: 10px;
+  --radius-card: 16px;
+  --radius-overlay: 20px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --sidebar-expanded: 248px;
+  --sidebar-collapsed: 80px;
+  --topbar-height: 72px;
+  --shadow-card: 0 4px 18px rgb(17 27 53 / 0.035);
+  --shadow-overlay: 0 16px 48px rgb(17 27 53 / 0.14);
+  --duration-fast: 160ms;
+
+  /* Alias agar kelas existing tetap memakai sumber yang sama. */
+  --brand-dark: var(--action);
+  --line: var(--border);
+  --muted: var(--text-secondary);
 }
-* {
+
+/* =========================================================
+   2. BASE DAN TIPOGRAFI
+   ========================================================= */
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
+
 body {
   margin: 0;
   min-width: 320px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--background);
 }
+
 button,
 input,
 select,
 textarea {
   font: inherit;
 }
-button,
-.button {
-  min-height: 44px;
-  border: 1px solid var(--brand);
-  border-radius: 7px;
-  background: var(--brand);
-  color: white;
-  padding: 10px 16px;
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-button:hover {
-  background: #10583f;
-}
-button.secondary,
-a.button {
-  background: white;
-  color: var(--brand-dark);
-  border-color: var(--line);
-}
-button.danger {
-  color: #98251c;
-  background: #fff4f2;
-  border-color: #eabdb7;
-}
-button:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-:focus-visible {
-  outline: 3px solid #be8b24;
-  outline-offset: 3px;
-}
-input,
-select,
-textarea {
-  width: 100%;
-  min-height: 44px;
-  border: 1px solid #91a79a;
-  border-radius: 6px;
-  background: white;
-  color: #18332b;
-  padding: 10px 12px;
-}
-textarea {
-  min-height: 90px;
-  resize: vertical;
-}
-label {
-  display: grid;
-  gap: 6px;
-  font-size: 0.94rem;
-  font-weight: 600;
-}
-input[type='checkbox'] {
-  width: 20px;
-  min-height: 20px;
-}
+
 h1,
 h2,
 h3,
 p {
   margin-top: 0;
 }
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-heading);
+  color: var(--text);
+}
+
 h1 {
-  font-size: clamp(1.55rem, 2.3vw, 2rem);
-  line-height: 1.2;
+  margin-bottom: 10px;
+  font-size: 28px;
+  line-height: 36px;
+  font-weight: 700;
   letter-spacing: -0.025em;
 }
+
 h2 {
-  font-size: 1.2rem;
-}
-p {
-  line-height: 1.6;
-}
-small,
-.muted {
-  color: var(--muted);
-}
-a {
-  color: #105c43;
-}
-.app-shell {
-  display: grid;
-  grid-template-columns: 230px minmax(0, 1fr);
-  min-height: 100dvh;
-}
-.sidebar {
-  padding: 28px 18px;
-  background: var(--brand-dark);
-  color: white;
-}
-.sidebar strong {
-  display: block;
-  font-size: 1.12rem;
-}
-.sidebar p {
-  color: #d0e4d8;
-  font-size: 0.88rem;
-  margin: 8px 0 26px;
-}
-.sidebar nav {
-  display: grid;
-  gap: 6px;
-}
-.sidebar button {
-  justify-content: flex-start;
-  border: 0;
-  background: transparent;
-  color: #e1ece5;
-}
-.sidebar button[aria-current='page'] {
-  background: #e5f2e8;
-  color: #103f32;
+  margin-bottom: var(--space-4);
+  font-size: 18px;
+  line-height: 26px;
   font-weight: 700;
 }
-.workspace {
-  min-width: 0;
+
+h3 {
+  margin-bottom: var(--space-3);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
 }
-.topbar {
-  display: flex;
+
+p {
+  margin-bottom: var(--space-4);
+  line-height: 1.6;
+}
+
+small,
+.muted {
+  color: var(--text-secondary);
+}
+
+small {
+  font-size: 12px;
+  line-height: 20px;
+}
+
+a {
+  color: var(--action);
+  text-underline-offset: 3px;
+}
+
+.inline-value {
+  overflow-wrap: anywhere;
+}
+
+/* =========================================================
+   3. TOMBOL DAN FOKUS
+   ========================================================= */
+button,
+.button {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 18px 32px;
-  border-bottom: 1px solid var(--line);
-  background: white;
+  justify-content: center;
+  gap: var(--space-2);
+  max-width: 100%;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid var(--action);
+  border-radius: var(--radius-control);
+  background: var(--action);
+  color: white;
+  font-weight: 600;
+  line-height: 22px;
+  text-decoration: none;
+  cursor: pointer;
 }
-.topbar p {
-  margin: 0;
+
+button:hover:not(:disabled),
+.button:hover {
+  background: var(--action-hover);
+  border-color: var(--action-hover);
 }
-.content {
-  max-width: 1440px;
-  margin: auto;
-  padding: 32px;
+
+button.secondary,
+a.button {
+  color: var(--text);
+  background: var(--surface);
+  border-color: var(--border);
 }
-.page-head {
-  margin-bottom: 26px;
+
+button.secondary:hover:not(:disabled),
+a.button:hover {
+  color: var(--action);
+  background: var(--subtle-blue);
+  border-color: #c9dcfa;
 }
-.page-head p {
-  max-width: 74ch;
-  color: var(--muted);
+
+button.danger {
+  color: var(--danger-text);
+  background: var(--danger-tint);
+  border-color: #edbdc6;
 }
-.panel {
-  background: white;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 24px;
-  margin-bottom: 22px;
+
+button.danger:hover:not(:disabled) {
+  color: var(--danger-text);
+  background: #ffe3e8;
+  border-color: #db8c9d;
 }
-.grid {
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+:focus-visible {
+  outline: 3px solid var(--action);
+  outline-offset: 3px;
+}
+
+/* =========================================================
+   4. FORM — nama field dan validasi tetap dari JSX existing
+   ========================================================= */
+input,
+select,
+textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 22px;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #65758c;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--action);
+}
+
+input[readonly] {
+  background: var(--surface-subdued);
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  color: var(--text-secondary);
+  background: #f1f4f8;
+  cursor: not-allowed;
+}
+
+input[aria-invalid='true'],
+select[aria-invalid='true'],
+textarea[aria-invalid='true'] {
+  border-color: var(--danger-text);
+}
+
+textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+label {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
-  gap: 18px;
+  gap: var(--space-2);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 600;
 }
+
+input[type='checkbox'] {
+  width: 20px;
+  min-height: 20px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--action);
+}
+
 .form {
   display: grid;
-  gap: 18px;
+  gap: var(--space-5);
 }
+
+.field-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: var(--space-4);
+}
+
 .actions {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
 }
+
 .actions.end {
   justify-content: flex-end;
 }
-.field-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
-  gap: 16px;
+
+.actions > label {
+  flex: 1 1 220px;
 }
-.notice {
-  padding: 14px 16px;
-  border: 1px solid #bccdc2;
-  background: #edf5ef;
-  border-radius: 6px;
-  margin-bottom: 18px;
+
+/* =========================================================
+   5. SHELL EXISTING — collapse/drawer dibuat pada tahap 4
+   ========================================================= */
+.app-shell {
+  display: grid;
+  grid-template-columns: var(--sidebar-expanded) minmax(0, 1fr);
+  min-height: 100dvh;
+}
+
+.sidebar {
+  padding: var(--space-6) var(--space-4);
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.sidebar strong {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 700;
+}
+
+.sidebar p {
+  margin: 8px 0 24px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.sidebar nav {
+  display: grid;
+  gap: 6px;
+}
+
+.sidebar button {
+  width: 100%;
+  justify-content: flex-start;
+  padding: 10px 12px;
+  border: 0;
+  border-left: 3px solid transparent;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.sidebar button:hover:not(:disabled) {
+  background: var(--surface-subdued);
+  color: var(--text);
+  border-left-color: transparent;
+}
+
+.sidebar button[aria-current='page'],
+.sidebar button[aria-current='page']:hover {
+  border-left-color: var(--brand);
+  background: var(--subtle-blue);
+  color: var(--action);
+  font-weight: 600;
+}
+
+.workspace {
+  min-width: 0;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: var(--topbar-height);
+  padding: 16px 32px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.topbar p {
+  margin: 0;
   overflow-wrap: anywhere;
 }
-.notice.error {
-  color: #8d2119;
-  border-color: #eabdb7;
-  background: #fff4f2;
+
+.content {
+  max-width: 1440px;
+  min-width: 0;
+  margin: auto;
+  padding: var(--space-8);
 }
+
+.page-head {
+  margin-bottom: var(--space-6);
+}
+
+.page-head p {
+  max-width: 74ch;
+  color: var(--text-secondary);
+}
+
+/* =========================================================
+   6. PANEL DAN GRID
+   ========================================================= */
+.panel {
+  min-width: 0;
+  margin-bottom: var(--space-6);
+  padding: var(--space-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
+  gap: var(--space-5);
+}
+
+/* =========================================================
+   7. PESAN — error dan pending tetap ditampilkan oleh React
+   ========================================================= */
+.notice {
+  margin-bottom: var(--space-5);
+  padding: 14px 16px;
+  border: 1px solid #c9dcfa;
+  border-radius: var(--radius-control);
+  background: var(--subtle-blue);
+  color: #123d7a;
+  overflow-wrap: anywhere;
+}
+
+.notice.error {
+  border-color: #edbdc6;
+  background: var(--danger-tint);
+  color: var(--danger-text);
+}
+
+/* =========================================================
+   8. TABEL, STATUS, DAN ANGKA UANG
+   ========================================================= */
 .table-scroll {
   width: 100%;
+  max-width: 100%;
   overflow-x: auto;
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
 }
+
 table {
   width: 100%;
   border-collapse: collapse;
-  background: white;
-  font-size: 0.92rem;
+  background: var(--surface);
+  font-size: 14px;
+  line-height: 20px;
 }
+
 th {
-  text-align: left;
-  background: #edf3ee;
-  color: #354f40;
+  background: var(--surface-subdued);
+  color: var(--text-secondary);
+  font-size: 12px;
   font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
 }
+
 th,
 td {
-  border-bottom: 1px solid #e1e8e3;
   padding: 14px 16px;
-  vertical-align: top;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
 }
+
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+
 tbody tr:hover {
-  background: #f7faf7;
+  background: #f9fbfe;
 }
+
 td.actions-cell {
   min-width: 200px;
 }
+
 .money {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   text-align: right;
 }
+
 .status {
-  display: inline-block;
-  padding: 4px 7px;
-  background: #eef2ee;
-  border-radius: 4px;
-  font-size: 0.84rem;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  border-radius: 6px;
+  background: #f0f3f8;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 600;
   white-space: nowrap;
 }
+
 .status.active,
 .status.approved,
 .status.valid {
-  color: #165b36;
-  background: #e5f3e8;
+  background: var(--success-tint);
+  color: var(--success-text);
 }
+
 .status.disputed,
 .status.invalid,
 .status.rejected {
-  color: #8d2119;
-  background: #fff0ec;
+  background: var(--danger-tint);
+  color: var(--danger-text);
 }
+
 .status.pending,
 .status.submitted,
 .status.duplicate {
-  color: #745211;
-  background: #fff3d9;
+  background: var(--warning-tint);
+  color: var(--warning-text);
 }
+
 .balance {
-  font-size: clamp(1.7rem, 3.5vw, 2.5rem);
+  font-size: clamp(1.75rem, 3.5vw, 2rem);
+  line-height: 1.25;
   font-weight: 700;
   letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
 }
+
+/* =========================================================
+   9. LOGIN EXISTING DAN DIALOG
+   ========================================================= */
 .login-page {
-  min-height: 100dvh;
   display: grid;
   place-items: center;
-  padding: 24px;
+  min-height: 100dvh;
+  padding: var(--space-6);
+  background: var(--background);
 }
+
 .login-panel {
   width: min(100%, 480px);
-  border-top: 5px solid var(--brand);
+  border-top: 3px solid var(--brand);
 }
+
 .login-panel h1 {
-  margin-bottom: 12px;
+  margin-bottom: var(--space-3);
 }
-.inline-value {
-  overflow-wrap: anywhere;
-}
+
 dialog {
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 28px;
   width: min(620px, calc(100% - 32px));
   max-height: calc(100dvh - 48px);
-  color: #18332b;
+  padding: var(--space-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-overlay);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-overlay);
+  overflow: auto;
 }
+
 dialog::backdrop {
-  background: rgb(12 37 25 / 0.5);
+  background: rgb(17 27 53 / 0.36);
 }
+
+details > summary {
+  color: var(--action);
+  cursor: pointer;
+}
+
 pre {
   overflow: auto;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  background: #f0f4ef;
-  padding: 14px;
-  border-radius: 6px;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface-subdued);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 20px;
 }
+
 .qr {
   display: grid;
   place-items: center;
-  gap: 16px;
-  padding: 20px;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background: var(--surface);
 }
+
 .receipt {
   display: none;
 }
+
+/* =========================================================
+   10. RESPONSIF — pertahankan navigasi existing sementara
+   ========================================================= */
+@media screen {
+  .table-scroll > table {
+    min-width: 760px;
+  }
+}
+
+@media (min-width: 851px) and (max-width: 1279px) {
+  .topbar,
+  .content {
+    padding: var(--space-6);
+  }
+}
+
 @media (max-width: 850px) {
   .app-shell {
     display: block;
   }
+
   .sidebar {
-    padding: 18px;
+    padding: var(--space-4);
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
   }
+
   .sidebar p {
-    margin-bottom: 12px;
+    margin-bottom: var(--space-3);
   }
+
   .sidebar nav {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
+    gap: var(--space-1);
   }
+
+  .sidebar nav button {
+    width: auto;
+  }
+
   .topbar,
   .content {
-    padding: 20px 16px;
+    padding: var(--space-6);
   }
+}
+
+@media (max-width: 767px) {
+  h1 {
+    font-size: 24px;
+    line-height: 32px;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+    line-height: 24px;
+  }
+
+  .topbar,
+  .content,
   .panel {
-    padding: 18px;
+    padding: var(--space-4);
+  }
+
+  .field-row {
+    grid-template-columns: 1fr;
+  }
+
+  .login-page {
+    padding: var(--space-4);
+  }
+
+  dialog {
+    padding: var(--space-5);
   }
 }
+
+/* =========================================================
+   11. MOTION — singkat dan tidak menggerakkan nominal
+   ========================================================= */
 @media (prefers-reduced-motion: no-preference) {
-  button {
-    transition: background-color 120ms ease;
+  button,
+  .button,
+  input,
+  select,
+  textarea {
+    transition:
+      background-color var(--duration-fast) ease,
+      border-color var(--duration-fast) ease,
+      color var(--duration-fast) ease;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  button,
+  .button,
+  input,
+  select,
+  textarea {
+    transition: none;
+  }
+}
+
+/* =========================================================
+   12. PRINT — blok print existing tetap disertakan
+   ========================================================= */
 @media print {
   @page {
     margin: 12mm;

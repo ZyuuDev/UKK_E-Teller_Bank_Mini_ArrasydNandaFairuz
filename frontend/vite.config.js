@@ -17,8 +17,8 @@ export default defineConfig(({ mode }) => {
               manifest: {
                 name: 'Bank Mini SMKN 1 Bantul',
                 short_name: 'Bank Mini',
-                theme_color: '#146c4f',
-                background_color: '#f4f7f4',
+                theme_color: '#1677ff',
+                background_color: '#f7f9fc',
                 display: 'standalone',
                 start_url: '/',
                 icons: [

@@ -1,0 +1,159 @@
+.teller-session-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius-control);
+}
+.teller-areas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.teller-areas .bank-button[aria-current='page'] {
+  background: var(--subtle-blue);
+  border-color: #c9dcfa;
+  color: var(--action);
+}
+.teller-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 28px;
+}
+.teller-steps li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.teller-steps li > span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  background: var(--border);
+  border-radius: 50%;
+}
+.teller-steps li[aria-current='step'] {
+  font-weight: 700;
+  color: var(--action);
+}
+.teller-steps li[aria-current='step'] > span {
+  background: var(--action);
+  color: white;
+}
+.teller-identify {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.teller-identify > .bank-field {
+  flex: 1;
+  min-width: 220px;
+}
+.teller-scanner {
+  max-width: 480px;
+  margin-bottom: 24px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.teller-scanner > summary {
+  cursor: pointer;
+  min-height: 44px;
+  padding-block: 10px;
+  font-weight: 600;
+}
+.teller-workgrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+.teller-account {
+  background: var(--surface-subdued);
+  padding: 20px;
+  border-radius: var(--radius-card);
+}
+.teller-account > .bank-avatar {
+  margin-bottom: 12px;
+}
+.teller-account .bank-notice {
+  margin-top: 20px;
+}
+.teller-verify {
+  max-width: 680px;
+  margin-inline: auto;
+}
+.teller-verify > dl {
+  margin-bottom: 24px;
+}
+.teller-amount {
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+.teller-gap {
+  margin-top: 24px;
+}
+.teller-reference {
+  color: var(--text-secondary);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  margin-block: 12px;
+}
+.teller-receipt-amount {
+  display: block;
+  margin-block: 16px 24px;
+  color: var(--text);
+  font-size: 32px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.teller-cash-stats {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+.teller-cash-stats .bank-stat__value {
+  font-size: 20px;
+}
+@media (max-width: 1199px) {
+  .teller-workgrid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+}
+@media (max-width: 599px) {
+  .teller-areas {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .teller-areas button {
+    padding-inline: 8px;
+    font-size: 12px;
+  }
+  .teller-steps {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .teller-identify > .bank-field,
+  .teller-identify > button {
+    min-width: 0;
+    flex-basis: 100%;
+  }
+  .teller-cash-stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
