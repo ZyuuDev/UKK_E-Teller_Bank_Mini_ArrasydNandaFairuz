@@ -6,20 +6,31 @@ use App\Http\Controllers\Admin\SaverController;
 use App\Http\Controllers\Admin\StudentImportController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\PinRecoveryController;
 use App\Http\Controllers\RecoveryController;
 use App\Http\Controllers\Student\AccountController;
 use App\Http\Controllers\Teller\CashSessionController;
 use App\Http\Controllers\Teller\TransactionController;
+use App\Http\Controllers\TransactionReportController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('auth/login', [AuthController::class, 'login'])->middleware('throttle:bank-login');
 Route::post('auth/forgot-password', [RecoveryController::class, 'requestReset'])->middleware('throttle:10,1');
 Route::post('auth/reset-password', [RecoveryController::class, 'reset'])->middleware('throttle:20,1');
 
+Route::post('auth/forgot-pin', [PinRecoveryController::class, 'requestReset'])->middleware('throttle:10,1');
+Route::post('auth/reset-pin', [PinRecoveryController::class, 'reset'])->middleware('throttle:20,1');
+
 Route::middleware(['auth:sanctum', 'account'])->group(function () {
     Route::get('auth/me', [AuthController::class, 'me']);
     Route::post('auth/logout', [AuthController::class, 'logout']);
     Route::post('auth/password', [AuthController::class, 'password'])->middleware('throttle:5,1');
+
+    Route::post('auth/email/request', [RecoveryController::class, 'requestVerification'])->middleware('throttle:5,1');
+    Route::post('auth/email/verify', [RecoveryController::class, 'verifyEmail'])->middleware('throttle:10,1');
+
+    Route::get('reports/transactions', [TransactionReportController::class, 'index'])->middleware('role:admin,teller');
+    Route::get('reports/export', [TransactionReportController::class, 'export'])->middleware(['role:admin,teller', 'throttle:10,1']);
 
     Route::prefix('admin')->middleware('role:admin')->group(function () {
         Route::get('users', [UserController::class, 'index']);
