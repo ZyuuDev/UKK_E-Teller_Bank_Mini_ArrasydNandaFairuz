@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Saver extends Model
 {
     protected $fillable = ['user_id', 'account_number', 'balance', 'security_pin', 'qr_code_token', 'activated_at', 'activated_by'];
+
     protected $hidden = ['security_pin'];
 
     protected function casts(): array
@@ -26,10 +27,13 @@ class Saver extends Model
 
     public function profile(): array
     {
-        $this->loadMissing('member');
+        $this->loadMissing('member.user');
         $minimum = (int) config('bank.minimum_balance');
+
         return [
             'id' => $this->id,
+            'user_id' => $this->user_id,
+            'service_active' => (bool) $this->member->user->is_active,
             'student_number' => $this->member->student_number,
             'full_name' => $this->member->full_name,
             'graduation_year' => $this->member->graduation_year,

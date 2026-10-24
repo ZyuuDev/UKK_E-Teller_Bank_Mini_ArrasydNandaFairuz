@@ -11,12 +11,11 @@ use Illuminate\Support\Str;
 
 class AccessCodeService
 {
-    public function __construct(private AuditService $audit)
-    {
-    }
+    public function __construct(private AuditService $audit) {}
 
     public function issue(User $user, string $purpose): void
     {
+        abort_unless(in_array($purpose, ['email_verification', 'password_reset'], true), 422);
         $key = hash_hmac('sha256', strtolower($user->email).':'.$purpose, config('app.key'));
         if (RateLimiter::tooManyAttempts('code-minute:'.$key, 1) || RateLimiter::tooManyAttempts('code-window:'.$key, 3)) {
             return;
@@ -44,17 +43,22 @@ class AccessCodeService
 
     public function consume(string $email, string $purpose, string $code, ?string $password = null, ?int $expectedUserId = null): bool
     {
+        if (! in_array($purpose, ['email_verification', 'password_reset'], true) || ($purpose === 'password_reset' && $password === null)) {
+            return false;
+        }
+
         return DB::transaction(function () use ($email, $purpose, $code, $password, $expectedUserId) {
-            $user = User::where('email', $email)->where('role', 'student')->where('is_active', true)->lockForUpdate()->first();
-            if (!$user || ($expectedUserId !== null && $user->id !== $expectedUserId) || ($purpose === 'password_reset' && !$user->email_verified_at)) {
+            $user = User::where('email', $email)->whereIn('role', ['admin', 'teller', 'student'])->where('is_active', true)->lockForUpdate()->first();
+            if (! $user || ($expectedUserId !== null && $user->id !== $expectedUserId) || ($purpose === 'password_reset' && ! $user->email_verified_at)) {
                 return false;
             }
             $row = DB::table('access_codes')->where('user_id', $user->id)->where('purpose', $purpose)->lockForUpdate()->first();
-            if (!$row || $row->email !== $email || $row->consumed_at || now()->greaterThanOrEqualTo($row->expires_at) || $row->attempts >= 5) {
+            if (! $row || $row->email !== $email || $row->consumed_at || now()->greaterThanOrEqualTo($row->expires_at) || $row->attempts >= 5) {
                 return false;
             }
-            if (!Hash::check($code, $row->code_hash)) {
+            if (! Hash::check($code, $row->code_hash)) {
                 DB::table('access_codes')->where('id', $row->id)->increment('attempts');
+
                 return false;
             }
             DB::table('access_codes')->where('id', $row->id)->update(['consumed_at' => now(), 'updated_at' => now()]);
@@ -64,7 +68,8 @@ class AccessCodeService
                 $user->update(['password' => $password, 'must_change_password' => false]);
                 $user->tokens()->delete();
             }
-            $this->audit->record($user->id, $purpose === 'email_verification' ? 'student.email_verified' : 'student.password_reset', 'user', $user->id);
+            $this->audit->record($user->id, $user->role.'.'.($purpose === 'email_verification' ? 'email_verified' : 'password_reset'), 'user', $user->id);
+
             return true;
         }, 3);
     }
