@@ -1,0 +1,51 @@
+.revision-stack {
+  display: grid;
+  gap: 32px;
+}
+.revision-stack > section + section {
+  border-top: 1px solid var(--border);
+  padding-top: 24px;
+}
+.revision-gap {
+  margin-top: 24px;
+}
+.revision-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+}
+.revision-filter > .bank-field {
+  flex: 1 1 180px;
+}
+.revision-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+.revision-scanner {
+  max-width: 100%;
+  overflow: hidden;
+}
+.revision-scanner video,
+.revision-scanner canvas {
+  max-width: 100%;
+}
+.revision-scanner__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+@media (max-width: 1000px) {
+  .revision-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 480px) {
+  .revision-metrics {
+    grid-template-columns: 1fr;
+  }
+  .revision-filter > .bank-field {
+    flex-basis: 100%;
+  }
+}

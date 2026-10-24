@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { api, money, useResource } from '../api'
 import { printReport } from '../printing'
+import TransactionReportsPage from './TransactionReportsPage'
 import {
   Button,
   DataTable,
@@ -143,6 +144,7 @@ export default function ReportsPage({ teller = false }) {
           <Pager data={list.data} page={page} onChange={setPage} />
         </ResourceState>
       </section>
+      <TransactionReportsPage isAdmin={!teller} />
       <Drawer
         open={!!selected}
         title="Detail laporan kas"
@@ -164,7 +166,9 @@ export default function ReportsPage({ teller = false }) {
                 {selected.teller?.name ?? `ID ${selected.teller_id}`}
               </DetailRow>
               <DetailRow label="ID sesi kas">{selected.cash_session_id}</DetailRow>
-              <DetailRow label="Modal awal">{money(selected.opening_balance)}</DetailRow>
+              <DetailRow label="Modal awal">
+                {money(selected.opening_balance)}
+              </DetailRow>
               <DetailRow label="Total setoran">
                 {money(selected.total_deposits)}
               </DetailRow>
@@ -190,7 +194,9 @@ export default function ReportsPage({ teller = false }) {
               <DetailRow label="Pemeriksa">
                 {selected.approver?.name ?? selected.approved_by}
               </DetailRow>
-              <DetailRow label="Catatan penolakan">{selected.rejection_reason}</DetailRow>
+              <DetailRow label="Catatan penolakan">
+                {selected.rejection_reason}
+              </DetailRow>
             </dl>
             {!hasSession && (
               <Notice>Laporan lama tanpa referensi sesi kas hanya dapat dibaca.</Notice>
@@ -226,8 +232,8 @@ export default function ReportsPage({ teller = false }) {
             </div>
             {!canPrint && (
               <p className="admin-footnote muted">
-                Cetak tersedia untuk laporan tanpa selisih yang menunggu pemeriksaan atau
-                telah disetujui.
+                Cetak tersedia untuk laporan tanpa selisih yang menunggu pemeriksaan
+                atau telah disetujui.
               </p>
             )}
             {review && (

@@ -49,6 +49,7 @@ export default function AppShell({
   page,
   onNavigate,
   onLogout,
+  onAccount,
   children,
 }) {
   const [collapsed, setCollapsed] = useState(false)
@@ -137,7 +138,9 @@ export default function AppShell({
             <strong aria-current="page">{current.label}</strong>
           </nav>
           <details className="bank-profile">
-            <summary aria-label={`Menu akun ${user.name || user.username || 'pengguna'}`}>
+            <summary
+              aria-label={`Menu akun ${user.name || user.username || 'pengguna'}`}
+            >
               <span className="bank-avatar" aria-hidden="true">
                 {initials}
               </span>
@@ -150,6 +153,15 @@ export default function AppShell({
             <div className="bank-profile__menu">
               <strong>{user.name}</strong>
               <p>@{user.username}</p>
+              <Button
+                variant="secondary"
+                onClick={(event) => {
+                  event.currentTarget.closest('details').removeAttribute('open')
+                  onAccount()
+                }}
+              >
+                Kelola akun
+              </Button>
               <Button variant="secondary" busy={loggingOut} onClick={logout}>
                 <LogOut size={16} aria-hidden="true" />
                 Keluar

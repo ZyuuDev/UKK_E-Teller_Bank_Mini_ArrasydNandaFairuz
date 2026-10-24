@@ -72,11 +72,11 @@ export function LoginPage({ onAuth }) {
       </form>
       <div className="bank-auth__links">
         <Button variant="secondary" disabled={busy} onClick={() => setRecovery(true)}>
-          Pulihkan akun siswa
+          Lupa password?
         </Button>
         <small>
-          Akun siswa digunakan pada aplikasi mobile. Pemulihan tersedia untuk email siswa
-          yang sudah diverifikasi.
+          Admin dan teller memulihkan password sendiri menggunakan email akun yang sudah
+          diverifikasi melalui menu Kelola akun.
         </small>
       </div>
     </AuthLayout>
@@ -183,7 +183,7 @@ export function RecoveryPage({ onBack }) {
         result.message ||
           (phase === 'email'
             ? 'Permintaan diproses. Periksa email yang memenuhi syarat pemulihan.'
-            : 'Password berhasil diperbarui. Silakan masuk melalui aplikasi siswa.'),
+            : 'Password berhasil diperbarui. Silakan masuk kembali dengan akunmu.'),
       )
       form.reset()
       setPhase(phase === 'email' ? 'code' : 'done')
@@ -195,8 +195,8 @@ export function RecoveryPage({ onBack }) {
   }
   return (
     <AuthLayout
-      title={phase === 'done' ? 'Password diperbarui' : 'Pulihkan akun siswa'}
-      description="Gunakan email siswa yang sudah diverifikasi. Jika belum terdaftar, hubungi petugas sekolah."
+      title={phase === 'done' ? 'Password diperbarui' : 'Pulihkan akun'}
+      description="Gunakan email akun yang sudah diverifikasi. Berlaku untuk admin, teller, dan siswa. Jika email belum terverifikasi, hubungi pengelola sekolah."
     >
       <Notice>{message}</Notice>
       <Notice error>{error}</Notice>

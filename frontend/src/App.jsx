@@ -23,7 +23,9 @@ import {
 } from './bank/AdminPages'
 import TellerPage from './bank/TellerPage'
 import AppShell from './bank/layout/AppShell'
-import { Button, Notice, PageHeader } from './bank/ui'
+import AccountSettingsPage from './bank/AccountSettingsPage'
+import './bank/teacher-revisions.css'
+import { Button, Drawer, Notice, PageHeader } from './bank/ui'
 import './bank/redesign.css'
 
 const pages = {
@@ -80,6 +82,8 @@ const navigation = Object.entries(pages).map(([key, value]) => ({ key, ...value 
 
 export default function App() {
   const [user, setUser] = useState(null)
+  const [accountOpen, setAccountOpen] = useState(false)
+  const [accountBusy, setAccountBusy] = useState(false)
   const [page, setPage] = useState('overview')
   const [loading, setLoading] = useState(!!getToken())
   const [error, setError] = useState('')
@@ -99,6 +103,7 @@ export default function App() {
     const expired = () => {
       setToken(null)
       setUser(null)
+      setAccountOpen(false)
     }
     window.addEventListener('bank-auth-expired', expired)
     return () => {
@@ -114,6 +119,7 @@ export default function App() {
     } finally {
       setToken(null)
       setUser(null)
+      setAccountOpen(false)
     }
   }
   if (loading)
@@ -128,6 +134,7 @@ export default function App() {
         <Notice error>{error}</Notice>
         <LoginPage
           onAuth={(value) => {
+            setAccountOpen(false)
             setUser(value)
             setError('')
             setPage('overview')
@@ -153,12 +160,20 @@ export default function App() {
       navigation={
         isAdmin
           ? navigation
-          : [{ key: 'teller', label: 'Pelayanan teller', group: 'Layanan', icon: Wallet }]
+          : [
+              {
+                key: 'teller',
+                label: 'Pelayanan teller',
+                group: 'Layanan',
+                icon: Wallet,
+              },
+            ]
       }
       page={isAdmin ? page : 'teller'}
       onNavigate={(key) => {
         if (isAdmin) setPage(key)
       }}
+      onAccount={() => setAccountOpen(true)}
       onLogout={logout}
     >
       <Notice error>{error}</Notice>
@@ -173,6 +188,18 @@ export default function App() {
           <TellerPage key={user.id} tellerId={user.id} />
         </>
       )}
+      <Drawer
+        open={accountOpen}
+        title="Kelola akun saya"
+        busy={accountBusy}
+        onClose={() => setAccountOpen(false)}
+      >
+        <AccountSettingsPage
+          user={user}
+          onUserChange={setUser}
+          onBusyChange={setAccountBusy}
+        />
+      </Drawer>
     </AppShell>
   )
 }

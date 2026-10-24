@@ -213,9 +213,10 @@ function useTellerWorkflow(tellerId, onChange, canCreate) {
 }
 
 function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
-  const [qrOpen, setQrOpen] = useState(false)
   const snapshot = tx.pending?.body || tx.review
-  const operation = tx.pending ? tx.pending.path.split('/').at(-1) : tx.review?.operation
+  const operation = tx.pending
+    ? tx.pending.path.split('/').at(-1)
+    : tx.review?.operation
   const verifying = !!snapshot
   const needsPin = ['activate', 'withdraw'].includes(operation)
   const label =
@@ -229,12 +230,14 @@ function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
     <section className="bank-panel">
       <h2>Pelayanan transaksi</h2>
       <ol className="teller-steps" aria-label="Alur transaksi">
-        {['Identifikasi', 'Input transaksi', 'Verifikasi', 'Bukti'].map((text, index) => (
-          <li key={text} aria-current={step === index + 1 ? 'step' : undefined}>
-            <span>{index + 1}</span>
-            {text}
-          </li>
-        ))}
+        {['Identifikasi', 'Input transaksi', 'Verifikasi', 'Bukti'].map(
+          (text, index) => (
+            <li key={text} aria-current={step === index + 1 ? 'step' : undefined}>
+              <span>{index + 1}</span>
+              {text}
+            </li>
+          ),
+        )}
       </ol>
       <Notice error>{tx.error}</Notice>
       {!canCreate && !tx.pending && (
@@ -250,15 +253,19 @@ function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
       )}
       {tx.pending && (
         <Notice>
-          Permintaan belum selesai dikonfirmasi. Periksa hasil sebelum melayani transaksi
-          berikutnya.
+          Permintaan belum selesai dikonfirmasi. Periksa hasil sebelum melayani
+          transaksi berikutnya.
           <p className="teller-reference">ID: {tx.pending.body.request_id}</p>
           <div className="bank-actions">
             <Button variant="secondary" busy={tx.busy} onClick={tx.resolve}>
               Periksa hasil
             </Button>
             {tx.rejected && (
-              <Button variant="secondary" disabled={tx.busy} onClick={tx.correctRejected}>
+              <Button
+                variant="secondary"
+                disabled={tx.busy}
+                onClick={tx.correctRejected}
+              >
                 Perbaiki permintaan yang ditolak
               </Button>
             )}
@@ -290,16 +297,6 @@ function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
               Cari siswa
             </Button>
           </form>
-          {!tx.busy && (
-            <details
-              className="teller-scanner"
-              open={qrOpen}
-              onToggle={(event) => setQrOpen(event.currentTarget.open)}
-            >
-              <summary>Identifikasi menggunakan QR</summary>
-              {qrOpen && <QrScanner onResult={tx.search} />}
-            </details>
-          )}
           {tx.found && (
             <div className="teller-workgrid">
               <section className="teller-account">
@@ -392,11 +389,11 @@ function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
               {tx.review?.full_name ?? 'Lihat identitas pada hasil pemeriksaan server'}
             </DetailRow>
             {tx.review?.student_number && (
-              <DetailRow label="Nomor siswa">
-                {tx.review.student_number}
-              </DetailRow>
+              <DetailRow label="Nomor siswa">{tx.review.student_number}</DetailRow>
             )}
-            <DetailRow label={snapshot.account_number ? 'Nomor rekening' : 'ID anggota'}>
+            <DetailRow
+              label={snapshot.account_number ? 'Nomor rekening' : 'ID anggota'}
+            >
               {snapshot.account_number ?? snapshot.member_id}
             </DetailRow>
             <DetailRow label="Jenis transaksi">{label}</DetailRow>
@@ -581,8 +578,8 @@ function CloseSession({ sessions, pending, onChanged }) {
       <Notice>{message}</Notice>
       {pending && (
         <Notice>
-          Selesaikan pemeriksaan transaksi tertunda pada area Pelayanan transaksi sebelum
-          mengajukan tutup kas.
+          Selesaikan pemeriksaan transaksi tertunda pada area Pelayanan transaksi
+          sebelum mengajukan tutup kas.
         </Notice>
       )}
       <ResourceState resource={sessions}>
@@ -610,7 +607,10 @@ function CloseSession({ sessions, pending, onChanged }) {
               </FormField>
               {selected && (
                 <div className="bank-stats teller-cash-stats">
-                  <StatCard label="Modal awal" value={money(selected.opening_balance)} />
+                  <StatCard
+                    label="Modal awal"
+                    value={money(selected.opening_balance)}
+                  />
                   <StatCard
                     label="Total setoran"
                     value={money(selected.total_deposits)}
@@ -689,6 +689,7 @@ function CloseSession({ sessions, pending, onChanged }) {
 export default function TellerPage({ tellerId }) {
   const sessions = useResource('/teller/cash-sessions')
   const [area, setArea] = useState('session')
+  const [scannerOpen, setScannerOpen] = useState(false)
   const [reportsVersion, setReportsVersion] = useState(0)
   const current = (sessions.data || []).find((row) => row.date === todayWib())
   const canCreate = !sessions.loading && !sessions.error && current?.status === 'open'
@@ -727,9 +728,17 @@ export default function TellerPage({ tellerId }) {
             'belum dibuka'
           )}
         </span>
-        <Button variant="secondary" onClick={sessions.refresh}>
-          Periksa status
-        </Button>
+        <div className="bank-actions">
+          <Button
+            disabled={tx.busy || !!tx.pending}
+            onClick={() => setScannerOpen(true)}
+          >
+            Pindai QR
+          </Button>
+          <Button variant="secondary" onClick={sessions.refresh}>
+            Periksa status
+          </Button>
+        </div>
       </div>
       {tx.pending && area !== 'transaction' && (
         <Notice>
@@ -766,6 +775,22 @@ export default function TellerPage({ tellerId }) {
       )}
       {area === 'reports' && <ReportsPage teller key={reportsVersion} />}
       <Modal
+        open={scannerOpen}
+        title="Pindai QR rekening"
+        onClose={() => setScannerOpen(false)}
+      >
+        {scannerOpen && (
+          <QrScanner
+            autoStart
+            onResult={(value) => {
+              setScannerOpen(false)
+              setArea('transaction')
+              tx.search(value)
+            }}
+          />
+        )}
+      </Modal>
+      <Modal
         open={!!tx.receipt}
         title="Bukti transaksi"
         onClose={() => {
@@ -778,7 +803,9 @@ export default function TellerPage({ tellerId }) {
           <>
             <p className="teller-reference">TRX-{tx.receipt.id}</p>
             <h3>{tx.receipt.full_name}</h3>
-            <strong className="teller-receipt-amount">{money(tx.receipt.amount)}</strong>
+            <strong className="teller-receipt-amount">
+              {money(tx.receipt.amount)}
+            </strong>
             <dl className="bank-detail-list">
               <DetailRow label="Jenis">
                 {tx.receipt.transaction_type === 'Deposit' ? 'Setoran' : 'Penarikan'}

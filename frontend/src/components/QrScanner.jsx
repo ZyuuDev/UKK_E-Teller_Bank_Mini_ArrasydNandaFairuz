@@ -1,107 +1,144 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Html5Qrcode } from 'html5-qrcode'
+import { Button, Notice } from '../bank/ui'
 
-export default function QrScanner({ onResult }) {
-  const id = 'qr' + useId().replaceAll(':', '')
+async function release(scanner) {
+  if (!scanner) return
+  try {
+    if (scanner.isScanning) await scanner.stop()
+  } catch {
+    /* kamera mungkin sudah berhenti */
+  }
+  try {
+    scanner.clear()
+  } catch {
+    /* wadah mungkin sudah dilepas */
+  }
+}
+
+export default function QrScanner({ onResult, autoStart = false }) {
+  const id = `bank-qr-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
   const callback = useRef(onResult)
-  const [mode, setMode] = useState('manual')
+  const operations = useRef(Promise.resolve())
+  const mounted = useRef(false)
+  const [mode, setMode] = useState(autoStart ? 'camera' : 'manual')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   useEffect(() => {
     callback.current = onResult
   }, [onResult])
   useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+    }
+  }, [])
+  useEffect(() => {
     if (mode !== 'camera') return undefined
     let disposed = false
     let accepted = false
     let scanner
-    async function start() {
-      await Promise.resolve()
-      if (disposed) return
-      scanner = new Html5Qrcode(id)
-      try {
-        await scanner.start(
-          { facingMode: 'environment' },
-          { fps: 10, qrbox: 220 },
-          (value) => {
-            if (disposed || accepted) return
-            accepted = true
-            callback.current(value)
-            setMode('manual')
-          },
-          () => undefined
-        )
-        if (disposed) await scanner.stop()
-      } catch (failure) {
-        if (!disposed)
-          setError(
-            `Kamera belum dapat digunakan. Pilih unggah gambar atau manual. ${String(failure)}`
+    operations.current = operations.current
+      .catch(() => undefined)
+      .then(async () => {
+        if (disposed) return
+        scanner = new Html5Qrcode(id)
+        try {
+          await scanner.start(
+            { facingMode: 'environment' },
+            { fps: 10, qrbox: { width: 220, height: 220 } },
+            (value) => {
+              if (disposed || accepted) return
+              accepted = true
+              setMode('manual')
+              callback.current(value)
+            },
+            () => undefined,
           )
-      }
-    }
-    start()
+        } catch {
+          await release(scanner)
+          if (!disposed)
+            setError(
+              'Kamera belum tersedia. Izinkan akses kamera pada browser, gunakan HTTPS/localhost, atau pilih unggah QR.',
+            )
+        }
+      })
     return () => {
       disposed = true
-      if (scanner?.isScanning)
-        scanner
-          .stop()
-          .then(() => scanner.clear())
-          .catch(() => undefined)
+      // Tunggu start selesai, termasuk bila dialog izin baru dijawab setelah modal ditutup.
+      operations.current = operations.current
+        .catch(() => undefined)
+        .then(() => release(scanner))
     }
   }, [mode, id])
-  async function upload(event) {
+
+  function upload(event) {
     const file = event.target.files?.[0]
-    if (!file) return
+    event.target.value = ''
+    if (!file || busy) return
     setBusy(true)
     setError('')
-    const scanner = new Html5Qrcode(id)
-    try {
-      callback.current(await scanner.scanFile(file, false))
-    } catch {
-      setError('QR tidak terbaca. Pilih gambar yang jelas atau gunakan nomor rekening.')
-    } finally {
-      scanner.clear()
-      setBusy(false)
-    }
+    operations.current = operations.current
+      .catch(() => undefined)
+      .then(async () => {
+        if (!mounted.current) return
+        const scanner = new Html5Qrcode(id)
+        try {
+          const value = await scanner.scanFile(file, false)
+          if (mounted.current) callback.current(value)
+        } catch {
+          if (mounted.current)
+            setError(
+              'QR tidak terbaca. Pilih gambar yang jelas atau tutup pemindai untuk memasukkan nomor siswa/rekening.',
+            )
+        } finally {
+          await release(scanner)
+          if (mounted.current) setBusy(false)
+        }
+      })
   }
+
   return (
-    <section style={{ marginTop: 16 }}>
-      <div className="actions">
-        <button
-          type="button"
-          className="secondary"
+    <section className="revision-scanner" aria-label="Pemindai identitas rekening">
+      <div className="revision-scanner__controls">
+        <Button
+          disabled={busy || mode === 'camera'}
           onClick={() => {
             setError('')
             setMode('camera')
           }}
         >
-          Kamera
-        </button>
-        <button
-          type="button"
-          className="secondary"
+          Gunakan kamera
+        </Button>
+        <Button
+          variant="secondary"
+          disabled={busy}
           onClick={() => {
             setError('')
             setMode('upload')
           }}
         >
           Unggah QR
-        </button>
-        <button type="button" className="secondary" onClick={() => setMode('manual')}>
+        </Button>
+        <Button variant="secondary" disabled={busy} onClick={() => setMode('manual')}>
           Hentikan kamera
-        </button>
+        </Button>
       </div>
-      {error && <p role="alert">{error}</p>}
-      <div id={id} style={{ marginTop: 16 }} />
+      <Notice error>{error}</Notice>
+      <div id={id} className="revision-gap" />
       {mode === 'upload' && (
-        <label>
-          Pilih gambar QR
+        <label className="bank-field">
+          Pilih gambar QR rekening
           <input type="file" accept="image/*" disabled={busy} onChange={upload} />
         </label>
       )}
       {mode === 'manual' && (
-        <p>Gunakan kolom pencarian nomor siswa atau rekening pada halaman pelayanan.</p>
+        <p>
+          Kamera dihentikan. Tutup pemindai untuk menggunakan pencarian nomor siswa atau
+          nomor rekening.
+        </p>
       )}
+      {busy && <p role="status">Membaca gambar QR…</p>}
     </section>
   )
 }
