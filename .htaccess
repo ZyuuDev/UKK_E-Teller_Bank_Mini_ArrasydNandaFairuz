@@ -1,0 +1,12 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # 1. Lindungi berkas sensitif dan tersembunyi dari akses publik langsung
+    RewriteRule ^(\.env|\.git|composer\.(json|lock)|package(-lock)?\.json|phpunit\.xml) - [F,L]
+    RewriteRule ^(app|bootstrap|config|database|resources|routes|storage/logs|tests|vendor) - [F,L]
+
+    # 2. Arahkan semua lalu lintas web ke folder public/
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
