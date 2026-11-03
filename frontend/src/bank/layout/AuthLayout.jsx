@@ -5,7 +5,7 @@ export default function AuthLayout({ title, description, children }) {
     <main className="bank-auth">
       <aside className="bank-auth__brand">
         <img
-          src="/brand/bank-mini-full.png"
+          src="/brand/bank-mini-full.png?v=2"
           alt="Bank Mini SMKN 1 Bantul"
           width={246}
           height={225}
@@ -28,7 +28,7 @@ export default function AuthLayout({ title, description, children }) {
         <div className="bank-auth__form">
           <img
             className="bank-auth__mobile-logo"
-            src="/brand/bank-mini-full.png"
+            src="/brand/bank-mini-full.png?v=2"
             alt="Bank Mini SMKN 1 Bantul"
             width={132}
             height={121}

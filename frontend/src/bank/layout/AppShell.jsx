@@ -34,7 +34,7 @@ function Brand({ collapsed = false }) {
   return (
     <div className="bank-brand">
       <img
-        src={collapsed ? '/brand/bank-mini-symbol.png' : '/brand/bank-mini-full.png'}
+        src={collapsed ? '/brand/bank-mini-symbol.png?v=2' : '/brand/bank-mini-full.png?v=2'}
         alt="Bank Mini SMKN 1 Bantul"
         width={collapsed ? 44 : 132}
         height={collapsed ? 44 : 121}
