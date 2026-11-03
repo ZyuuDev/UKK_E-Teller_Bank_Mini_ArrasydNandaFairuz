@@ -65,7 +65,6 @@ export default function QrScanner({ onResult, autoStart = false }) {
       })
     return () => {
       disposed = true
-      // Tunggu start selesai, termasuk bila dialog izin baru dijawab setelah modal ditutup.
       operations.current = operations.current
         .catch(() => undefined)
         .then(() => release(scanner))

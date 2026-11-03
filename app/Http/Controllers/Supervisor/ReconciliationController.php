@@ -20,11 +20,9 @@ class ReconciliationController extends Controller
      */
     public function index(Request $request)
     {
-        // ambil semua rekonsiliasi + data teller & supervisor
         $query = DailyReconciliation::with('teller:id,name,username')
             ->with('supervisor:id,name,username');
 
-        // filter berdasarkan status jika parameter dikirim
         if ($request->has('status')) {
             $request->validate([
                 'status' => 'in:Pending,Approved,Disputed',
@@ -32,7 +30,6 @@ class ReconciliationController extends Controller
             $query->where('status', $request->status);
         }
 
-        // urutkan dari terbaru
         $reconciliations = $query->orderBy('date', 'desc')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -49,7 +46,6 @@ class ReconciliationController extends Controller
      */
     public function approve(string $id)
     {
-        // 1. Cari rekonsiliasi
         $reconciliation = DailyReconciliation::with('teller:id,name,username')->find($id);
 
         if (!$reconciliation) {
@@ -59,7 +55,6 @@ class ReconciliationController extends Controller
             ], 404);
         }
 
-        // 2. Cek apakah sudah Approved (terkunci permanen)
         if ($reconciliation->status === 'Approved') {
             return response()->json([
                 'status'  => 'error',
@@ -67,7 +62,6 @@ class ReconciliationController extends Controller
             ], 409);
         }
 
-        // 3. tidak bisa approve jika ada selisih
         if ($reconciliation->status === 'Disputed') {
             return response()->json([
                 'status'  => 'error',
@@ -77,17 +71,14 @@ class ReconciliationController extends Controller
             ], 422); 
         }
 
-        // 4. ubah status + catat siapa & kapan
         $reconciliation->update([
             'status'        => 'Approved',
             'supervisor_id' => auth()->id(),
             'approved_at'   => now(),
         ]);
 
-        // 5. muat supervisor untuk response
         $reconciliation->load('supervisor:id,name,username');
 
-        // 6. response sukses
         return response()->json([
             'status'  => 'success',
             'message' => 'Laporan rekonsiliasi berhasil disetujui. Kas telah resmi dipindahkan ke brankas.',

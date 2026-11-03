@@ -98,7 +98,6 @@ class TransactionReportController extends Controller
     {
         $value = $value ?? '';
 
-        // Hindari formula spreadsheet dari nama/catatan yang berasal dari input user.
         return preg_match('/^[\s\x00-\x1F]*[=+\-@]/u', $value) ? "'".$value : $value;
     }
 
@@ -108,16 +107,14 @@ class TransactionReportController extends Controller
         $format = $request->input('format', 'pdf');
         $filename = 'bank-mini-'.$filters['period'].'-'.$filters['start'].'-'.($filters['teller_id'] ?? 'semua');
         if ($format === 'csv') {
-            // CSV mengalir per batch; tidak memuat seluruh halaman data di browser.
             return response()->streamDownload(function () use ($filters) {
-                $output = fopen('php://output', 'wb');
+                $output = fopen('php://output', 'w');
                 fwrite($output, "\xEF\xBB\xBF");
                 fputcsv($output, ['Referensi', 'Tanggal buku', 'Waktu WIB', 'Rekening', 'Nama siswa', 'Teller', 'Jenis', 'Nominal rupiah', 'Saldo sesudah', 'Catatan', 'Request ID'], ',', '"', '');
                 foreach ($this->query($filters)->with(['teller', 'saver.member'])->lazyById(500) as $transaction) {
                     $row = $this->row($transaction);
                     fputcsv($output, [
                         'TRX-'.$row['id'], $row['date'], $row['created_at'],
-                        // Awalan apostrof menjaga nomor rekening sebagai teks di spreadsheet.
                         "'".($row['account_number'] ?? ''), $this->csvText($row['full_name']),
                         $this->csvText($row['teller_name']), $row['type_label'],
                         $row['amount'], $row['balance_after'], $this->csvText($row['notes']), $row['request_id'],

@@ -1,10 +1,4 @@
-// Props:
-//title = label kartu, misal "Total Setoran Hari Ini"
-//value = nilai yang ditampilkan besar, misal "Rp 500.000"
-//icon = komponen ikon dari lucide-react
-//color = tema warna kartu ('blue' | 'green' | 'red' | 'amber')
 export default function StatCard({ title, value, icon: Icon, color = 'blue' }) {
-  //mapping warna ke kelas tailwind
 const colors = {
     blue: 'border-blue-500/30 text-blue-400',
     green: 'border-green-500/30 text-green-400',

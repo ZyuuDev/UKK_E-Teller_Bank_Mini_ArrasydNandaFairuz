@@ -14,6 +14,7 @@ use App\Http\Controllers\Teller\TransactionController;
 use App\Http\Controllers\TransactionReportController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('service-status', [CashSessionController::class, 'serviceStatus']);
 Route::post('auth/login', [AuthController::class, 'login'])->middleware('throttle:bank-login');
 Route::post('auth/forgot-password', [RecoveryController::class, 'requestReset'])->middleware('throttle:10,1');
 Route::post('auth/reset-password', [RecoveryController::class, 'reset'])->middleware('throttle:20,1');
@@ -46,9 +47,13 @@ Route::middleware(['auth:sanctum', 'account'])->group(function () {
         Route::post('member-imports', [StudentImportController::class, 'preview']);
         Route::post('member-imports/{id}/commit', [StudentImportController::class, 'commit']);
         Route::get('savers', [SaverController::class, 'index']);
+        Route::post('savers/{id}/reset-pin', [SaverController::class, 'resetPin']);
         Route::get('reconciliations', [ReconciliationController::class, 'index']);
         Route::post('reconciliations/{report}/approve', [ReconciliationController::class, 'approve']);
         Route::post('reconciliations/{report}/reject', [ReconciliationController::class, 'reject']);
+        Route::get('cash-requests', [ReconciliationController::class, 'cashRequests']);
+        Route::post('cash-requests/{id}/approve', [ReconciliationController::class, 'approveCashRequest']);
+        Route::post('cash-requests/{id}/reject', [ReconciliationController::class, 'rejectCashRequest']);
         Route::get('journals', [ReconciliationController::class, 'journals']);
         Route::get('audit-logs', [ReconciliationController::class, 'audit']);
     });
@@ -58,11 +63,16 @@ Route::middleware(['auth:sanctum', 'account'])->group(function () {
         Route::post('activate', [TransactionController::class, 'activate'])->middleware('throttle:20,1');
         Route::post('deposit', [TransactionController::class, 'deposit'])->middleware('throttle:30,1');
         Route::post('withdraw', [TransactionController::class, 'withdraw'])->middleware('throttle:5,1');
+        Route::post('reset-pin', [TransactionController::class, 'resetPin']);
         Route::get('transactions/by-request/{requestId}', [TransactionController::class, 'byRequest']);
         Route::get('transactions/{transaction}', [TransactionController::class, 'receipt']);
+        Route::get('service-status', [CashSessionController::class, 'serviceStatus']);
+        Route::post('service-status', [CashSessionController::class, 'updateServiceStatus']);
         Route::get('cash-sessions', [CashSessionController::class, 'index']);
         Route::post('cash-sessions', [CashSessionController::class, 'store']);
         Route::post('cash-sessions/{session}/submit', [CashSessionController::class, 'submit']);
+        Route::get('cash-requests', [CashSessionController::class, 'cashRequests']);
+        Route::post('cash-requests', [CashSessionController::class, 'requestCash']);
         Route::get('reports', [CashSessionController::class, 'reports']);
     });
 

@@ -16,6 +16,9 @@ const labels = {
   duplicate: 'Duplikat',
   service_active: 'Akses aktif',
   service_blocked: 'Akses diblokir',
+  buka: 'Loket Buka',
+  istirahat: 'Loket Istirahat',
+  tutup: 'Loket Tutup',
 }
 
 export function Button({
@@ -110,11 +113,11 @@ export function StatCard({ label, value, icon: Icon }) {
 }
 
 export function Status({ value }) {
-  const tone = ['active', 'approved', 'valid', 'service_active'].includes(value)
+  const tone = ['active', 'approved', 'valid', 'service_active', 'buka'].includes(value)
     ? 'success'
-    : ['disputed', 'invalid', 'service_blocked'].includes(value)
+    : ['disputed', 'invalid', 'service_blocked', 'tutup'].includes(value)
       ? 'danger'
-      : ['pending', 'submitted', 'duplicate'].includes(value)
+      : ['pending', 'submitted', 'duplicate', 'istirahat'].includes(value)
         ? 'warning'
         : 'neutral'
   return (

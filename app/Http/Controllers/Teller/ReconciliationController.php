@@ -27,20 +27,17 @@ class ReconciliationController extends Controller
      */
     public function submit(Request $request)
     {
-        // 1. Validasi input
         $request->validate([
             'opening_balance'      => 'required|numeric|min:0',
             'actual_cash_on_hand'  => 'required|numeric|min:0',
         ]);
 
-        // 2. Panggil ReconciliationService
         $reconciliation = $this->reconciliationService->calculateAndStore(
             auth()->id(),
             $request->opening_balance,
             $request->actual_cash_on_hand
         );
 
-        // 3. Buat pesan sesuai status
         if ($reconciliation->status === 'Disputed') {
             $message = 'Rekonsiliasi tercatat dengan STATUS DISPUTED — terdapat selisih Rp ' .
                 number_format(abs($reconciliation->discrepancy), 0, ',', '.') .
@@ -49,7 +46,6 @@ class ReconciliationController extends Controller
             $message = 'Rekonsiliasi berhasil dicatat. Status: Pending — menunggu approval Supervisor.';
         }
 
-        // 4. Response
         return response()->json([
             'status'  => 'success',
             'message' => $message,
@@ -64,7 +60,6 @@ class ReconciliationController extends Controller
      */
     public function show(string $id)
     {
-        // Hanya tampilkan laporan milik teller yang sedang login
         $reconciliation = DailyReconciliation::with('teller:id,name,username')
             ->with('supervisor:id,name,username')
             ->where('id', $id)

@@ -9,7 +9,7 @@ class Customer extends Model
     protected $fillable = [
         'user_id',
         'account_number',
-        'nis',          // Nomor Induk Siswa — ada di tabel, wajib masuk fillable!
+        'nis',
         'full_name',
         'class_name',
         'balance',

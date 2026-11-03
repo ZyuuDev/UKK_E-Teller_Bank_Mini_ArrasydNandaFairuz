@@ -22,7 +22,7 @@ class StudentImportController extends Controller
     public function template()
     {
         return response()->streamDownload(function () {
-            $stream = fopen('php://output', 'wb');
+            $stream = fopen('php://output', 'w');
             fwrite($stream, "\xEF\xBB\xBF");
             fputcsv($stream, ['student_number', 'full_name', 'graduation_year'], ',', '"', '');
             fclose($stream);

@@ -7,6 +7,7 @@ use App\Models\Saver;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -63,6 +64,20 @@ class BankingService
         $sequence = DB::table('account_sequences')->where('year', $year)->lockForUpdate()->first();
         DB::table('account_sequences')->where('year', $year)->increment('next_number');
         return 'BMS-'.$year.'-'.str_pad((string) $sequence->next_number, 4, '0', STR_PAD_LEFT);
+    }
+
+    private function availableCash(object $session): int
+    {
+        $additional = 0;
+        if (Schema::hasTable('cash_requests')) {
+            $additional = (int) DB::table('cash_requests')
+                ->where('cash_session_id', $session->id)
+                ->where('status', 'approved')
+                ->sum('amount');
+        }
+        $deposits = (int) Transaction::where('cash_session_id', $session->id)->where('transaction_type', 'Deposit')->sum('amount');
+        $withdrawals = (int) Transaction::where('cash_session_id', $session->id)->where('transaction_type', 'Withdrawal')->sum('amount');
+        return (int) $session->opening_balance + $additional + $deposits - $withdrawals;
     }
 
     public function activate(int $memberId, int $amount, string $pin, int $tellerId, string $requestId): Transaction
@@ -129,7 +144,7 @@ class BankingService
                 if ($saver->balance - $amount < config('bank.minimum_balance')) {
                     $this->reject('amount', 'Penarikan harus menyisakan saldo minimal Rp10.000.');
                 }
-                $cash = $session->opening_balance + (int) Transaction::where('cash_session_id', $session->id)->where('transaction_type', 'Deposit')->sum('amount') - (int) Transaction::where('cash_session_id', $session->id)->where('transaction_type', 'Withdrawal')->sum('amount');
+                $cash = $this->availableCash($session);
                 if ($amount > $cash) {
                     $this->reject('amount', 'Kas loket tidak mencukupi untuk penarikan ini.');
                 }
@@ -144,7 +159,7 @@ class BankingService
         if ($balance < 0 || $balance > config('bank.maximum_balance')) {
             $this->reject('amount', 'Saldo hasil transaksi di luar batas sistem.');
         }
-        $cash = (int) $session->opening_balance + (int) Transaction::where('cash_session_id', $session->id)->where('transaction_type', 'Deposit')->sum('amount') - (int) Transaction::where('cash_session_id', $session->id)->where('transaction_type', 'Withdrawal')->sum('amount');
+        $cash = $this->availableCash($session);
         $cashAfter = $cash + ($type === 'Deposit' ? $amount : -$amount);
         if ($cashAfter < 0 || $cashAfter > config('bank.maximum_balance')) {
             $this->reject('amount', 'Kas hasil transaksi di luar batas sistem.');

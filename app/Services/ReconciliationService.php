@@ -27,30 +27,22 @@ class ReconciliationService
     {
         $today = Carbon::today()->toDateString();
 
-        // Hitung total setoran hari ini oleh teller ini
         $totalDeposits = Transaction::where('teller_id', $tellerId)
             ->where('date', $today)
             ->where('transaction_type', 'Deposit')
             ->sum('amount');
 
-        // Hitung total penarikan hari ini oleh teller ini
         $totalWithdrawals = Transaction::where('teller_id', $tellerId)
             ->where('date', $today)
             ->where('transaction_type', 'Withdrawal')
             ->sum('amount');
 
-        // Kalkulasi saldo akhir yang diharapkan
         $expectedClosing = $openingBalance + $totalDeposits - $totalWithdrawals;
 
-        // Hitung selisih (bisa negatif, nol, atau positif)
         $discrepancy = $actualCash - $expectedClosing;
 
-        // Tentukan status berdasarkan selisih
-        // Discrepancy = 0 → Pending (menunggu approval Supervisor)
-        // Discrepancy ≠ 0 → Disputed (ada selisih, perlu investigasi)
         $status = ($discrepancy == 0) ? 'Pending' : 'Disputed';
 
-        // Simpan ke database
         $reconciliation = DailyReconciliation::create([
             'teller_id'                => $tellerId,
             'date'                     => $today,

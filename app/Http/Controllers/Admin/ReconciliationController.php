@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\CashRequest;
 use App\Models\DailyReconciliation;
 use App\Services\CashSessionService;
 use Illuminate\Http\Request;
@@ -29,6 +30,27 @@ class ReconciliationController extends Controller
     {
         $data = $request->validate(['reason' => 'required|string|min:5|max:1000']);
         return response()->json(['data' => $sessions->review($report, $request->user()->id, false, $data['reason'])]);
+    }
+
+    public function cashRequests(Request $request)
+    {
+        $request->validate(['status' => 'nullable|in:pending,approved,rejected']);
+        $query = CashRequest::with('teller:id,name', 'approver:id,name')->orderByDesc('date')->orderByDesc('id');
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        return response()->json(['data' => $query->paginate(25)]);
+    }
+
+    public function approveCashRequest(Request $request, int $id, CashSessionService $sessions)
+    {
+        return response()->json(['data' => $sessions->approveCashRequest($id, $request->user()->id)]);
+    }
+
+    public function rejectCashRequest(Request $request, int $id, CashSessionService $sessions)
+    {
+        $data = $request->validate(['reason' => 'required|string|min:3|max:255']);
+        return response()->json(['data' => $sessions->rejectCashRequest($id, $request->user()->id, $data['reason'])]);
     }
 
     public function journals()

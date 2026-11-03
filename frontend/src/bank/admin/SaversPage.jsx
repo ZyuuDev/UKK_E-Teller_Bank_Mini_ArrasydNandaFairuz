@@ -18,6 +18,7 @@ import {
 export default function SaversPage() {
   const [busy, setBusy] = useState(false)
   const [confirming, setConfirming] = useState(false)
+  const [resettingPin, setResettingPin] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [draft, setDraft] = useState('')
@@ -162,16 +163,28 @@ export default function SaversPage() {
               jurnal, dan riwayat tidak dihapus. Aktivasi rekening baru tetap melalui
               setoran pertama teller.
             </p>
-            <Button
-              variant={selected.service_active ? 'danger' : 'primary'}
-              disabled={busy}
-              onClick={() => {
-                setError('')
-                setConfirming(true)
-              }}
-            >
-              {selected.service_active ? 'Nonaktifkan akses' : 'Aktifkan akses'}
-            </Button>
+            <div className="bank-actions">
+              <Button
+                variant={selected.service_active ? 'danger' : 'primary'}
+                disabled={busy}
+                onClick={() => {
+                  setError('')
+                  setConfirming(true)
+                }}
+              >
+                {selected.service_active ? 'Nonaktifkan akses' : 'Aktifkan akses'}
+              </Button>
+              <Button
+                variant="secondary"
+                disabled={busy}
+                onClick={() => {
+                  setError('')
+                  setResettingPin(true)
+                }}
+              >
+                Reset PIN (123456)
+              </Button>
+            </div>
             <h3 className="admin-footnote">QR identitas rekening</h3>
             {selected.qr_code_token ? (
               <figure className="admin-qr">
@@ -191,6 +204,37 @@ export default function SaversPage() {
           </>
         )}
       </Drawer>
+      <ConfirmDialog
+        open={resettingPin && !!selected}
+        title="Reset PIN rekening nasabah?"
+        onClose={() => setResettingPin(false)}
+        onConfirm={async () => {
+          if (!selected || busy) return
+          setBusy(true)
+          setError('')
+          try {
+            const res = await api('/admin/savers/' + selected.id + '/reset-pin', { method: 'POST' })
+            setMessage(res.data?.message || 'PIN berhasil direset ke 123456.')
+            setResettingPin(false)
+            setSelected(null)
+            list.refresh()
+          } catch (failure) {
+            setError(failure.message)
+          } finally {
+            setBusy(false)
+          }
+        }}
+        busy={busy}
+        error={error}
+        confirmLabel="Ya, reset PIN"
+      >
+        <p>
+          {selected?.full_name} · {selected?.account_number}
+        </p>
+        <p>
+          PIN akan diubah menjadi <strong>123456</strong>. Beritahukan siswa agar segera mengganti PIN setelah login.
+        </p>
+      </ConfirmDialog>
       <ConfirmDialog
         open={confirming && !!selected}
         title={

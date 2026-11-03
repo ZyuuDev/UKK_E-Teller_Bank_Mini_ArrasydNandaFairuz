@@ -14,10 +14,8 @@ class CustomerService
      */
     public function generateAccountNumber(): string
     {
-        // tahun saat ini
         $year = date('Y');
 
-        // Prefix yang dipakai: BMS-2026-
         $prefix = 'BMS-' . $year . '-';
 
         $lastCustomer = Customer::where('account_number', 'like', $prefix . '%')
@@ -25,14 +23,12 @@ class CustomerService
             ->first();
 
         if ($lastCustomer) {
-            // Ambil 4 digit terakhir dari nomor rekening terakhir
             $lastNumber = (int) substr($lastCustomer->account_number, -4);
             $nextNumber = $lastNumber + 1;
         } else {
             $nextNumber = 1;
         }
 
-        // Format ke 4 digit: 1 → "0001", 42 → "0042"
         return $prefix . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
     }
 
@@ -41,7 +37,6 @@ class CustomerService
      */
     public function generateQrToken(): string
     {
-        // Loop sampai dapat token yang benar-benar unik
         do {
             $token = Str::uuid()->toString();
         } while (Customer::where('qr_code_token', $token)->exists());

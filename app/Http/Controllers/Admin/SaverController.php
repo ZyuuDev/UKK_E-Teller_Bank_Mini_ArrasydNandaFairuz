@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Saver;
+use App\Services\AuditService;
 use Illuminate\Http\Request;
 
 class SaverController extends Controller
@@ -21,5 +22,21 @@ class SaverController extends Controller
         $rows->getCollection()->transform(fn ($saver) => $saver->profile());
 
         return response()->json(['data' => $rows]);
+    }
+
+    public function resetPin(Request $request, int $id, AuditService $audit)
+    {
+        $saver = Saver::with('member')->findOrFail($id);
+        $saver->update(['security_pin' => '123456']);
+        $audit->record($request->user()->id, 'saver.pin_reset', 'saver', $saver->id, [
+            'account_number' => $saver->account_number,
+            'by_role' => 'admin',
+        ]);
+
+        return response()->json([
+            'data' => [
+                'message' => 'PIN rekening ' . $saver->account_number . ' (' . $saver->member->full_name . ') berhasil direset ke PIN default 123456.',
+            ],
+        ]);
     }
 }

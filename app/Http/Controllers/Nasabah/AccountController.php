@@ -7,8 +7,6 @@ use Illuminate\Http\Request;
 
 class AccountController extends Controller
 {
-    //cek saldo rekening nasabah
-    //GET /api/nasabah/balance
     public function balance()
     {
         $customer = auth()->user()->customer;
@@ -30,8 +28,6 @@ class AccountController extends Controller
         ], 200);
     }
 
-    //MUTASI
-    //GET /api/nasabah/mutations
 
     public function mutations()
     {
@@ -43,7 +39,6 @@ class AccountController extends Controller
             ], 404);
         }
 
-        //ambil transaksi
         $transactions = $customer->transactions()->with('teller:id,name')->orderBy('created_at', 'desc')->get();
 
         $totalDeposits = $transactions->where('transaction_type', 'Deposit')->sum('amount');

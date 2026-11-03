@@ -4,11 +4,13 @@ import { printReport } from '../printing'
 import TransactionReportsPage from './TransactionReportsPage'
 import {
   Button,
+  ConfirmDialog,
   DataTable,
   DetailRow,
   Drawer,
   FormField,
   Input,
+  Modal,
   Notice,
   PageHeader,
   Pager,
@@ -16,6 +18,199 @@ import {
   Select,
   Status,
 } from '../ui'
+
+function CashRequestsAdmin() {
+  const [page, setPage] = useState(1)
+  const list = useResource(`/admin/cash-requests?page=${page}`)
+  const [selected, setSelected] = useState(null)
+  const [actionType, setActionType] = useState('')
+  const [rejectionReason, setRejectionReason] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+
+  async function handleApprove() {
+    if (!selected || busy) return
+    setBusy(true)
+    setError('')
+    try {
+      await api(`/admin/cash-requests/${selected.id}/approve`, { method: 'POST' })
+      setMessage('Pengajuan kas disetujui. Kas loket teller telah bertambah.')
+      setSelected(null)
+      setActionType('')
+      list.refresh()
+    } catch (failure) {
+      setError(failure.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleReject(event) {
+    event.preventDefault()
+    if (!selected || busy) return
+    setBusy(true)
+    setError('')
+    try {
+      await api(`/admin/cash-requests/${selected.id}/reject`, {
+        method: 'POST',
+        body: { reason: rejectionReason },
+      })
+      setMessage('Pengajuan kas ditolak.')
+      setSelected(null)
+      setActionType('')
+      setRejectionReason('')
+      list.refresh()
+    } catch (failure) {
+      setError(failure.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const pendingCount = (list.data?.data || []).filter((r) => r.status === 'pending').length
+
+  return (
+    <section className="bank-panel">
+      <div className="bank-panel__head">
+        <h2>
+          Pengajuan tambahan kas teller
+          {pendingCount > 0 && (
+            <span
+              style={{
+                marginLeft: '0.5rem',
+                padding: '0.15rem 0.5rem',
+                borderRadius: '9999px',
+                background: '#ef4444',
+                color: '#fff',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+              }}
+            >
+              {pendingCount} pending
+            </span>
+          )}
+        </h2>
+        <Button variant="secondary" onClick={list.refresh}>
+          Muat ulang
+        </Button>
+      </div>
+      <Notice>{message}</Notice>
+      <Notice error>{error}</Notice>
+      <ResourceState resource={list}>
+        <DataTable
+          caption="Daftar pengajuan kas teller"
+          rows={list.data?.data}
+          columns={[
+            ['date', 'Tanggal'],
+            ['teller', 'Teller', null, (row) => row.teller?.name || 'Teller'],
+            ['amount', 'Nominal', 'money'],
+            ['notes', 'Alasan pengajuan'],
+            ['status', 'Status', 'status'],
+            [
+              'rejection_notes',
+              'Catatan penolakan',
+              null,
+              (row) => row.rejection_notes || '-',
+            ],
+          ]}
+          actions={(row) =>
+            row.status === 'pending' ? (
+              <div className="bank-actions">
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    setSelected(row)
+                    setActionType('approve')
+                    setError('')
+                  }}
+                >
+                  Setujui
+                </Button>
+                <Button
+                  variant="danger"
+                  onClick={() => {
+                    setSelected(row)
+                    setActionType('reject')
+                    setRejectionReason('')
+                    setError('')
+                  }}
+                >
+                  Tolak
+                </Button>
+              </div>
+            ) : null
+          }
+        />
+        <Pager data={list.data} page={page} onChange={setPage} />
+      </ResourceState>
+
+      <ConfirmDialog
+        open={actionType === 'approve' && !!selected}
+        title="Setujui tambahan kas?"
+        onClose={() => {
+          setSelected(null)
+          setActionType('')
+        }}
+        onConfirm={handleApprove}
+        busy={busy}
+        error={error}
+        confirmLabel="Ya, setujui tambahan kas"
+      >
+        <p>
+          Nominal: <strong>{money(selected?.amount || 0)}</strong> untuk{' '}
+          {selected?.teller?.name}
+        </p>
+        <p>Alasan teller: {selected?.notes}</p>
+        <p>
+          Menyetujui permintaan ini akan mendebit Kas Loket (101) dan mengkredit Kas Induk
+          (102), sehingga menambah batas penarikan teller.
+        </p>
+      </ConfirmDialog>
+
+      <Modal
+        open={actionType === 'reject' && !!selected}
+        title="Tolak pengajuan tambahan kas"
+        onClose={() => {
+          setSelected(null)
+          setActionType('')
+        }}
+      >
+        <form className="bank-form" onSubmit={handleReject}>
+          <p>
+            Nominal: <strong>{money(selected?.amount || 0)}</strong> ({selected?.teller?.name})
+          </p>
+          <FormField label="Alasan penolakan" hint="Wajib diisi (minimal 3 karakter)">
+            <Input
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              minLength={3}
+              maxLength={255}
+              required
+              placeholder="Contoh: Saldo kas loket masih mencukupi"
+            />
+          </FormField>
+          <Notice error>{error}</Notice>
+          <div className="bank-actions bank-actions--end">
+            <Button
+              variant="secondary"
+              disabled={busy}
+              onClick={() => {
+                setSelected(null)
+                setActionType('')
+              }}
+            >
+              Batal
+            </Button>
+            <Button variant="danger" type="submit" busy={busy}>
+              Konfirmasi penolakan
+            </Button>
+          </div>
+        </form>
+      </Modal>
+    </section>
+  )
+}
 
 export default function ReportsPage({ teller = false }) {
   const [page, setPage] = useState(1)
@@ -81,6 +276,7 @@ export default function ReportsPage({ teller = false }) {
         />
       )}
       <Notice>{message}</Notice>
+      {!teller && <CashRequestsAdmin />}
       <section className="bank-panel">
         <div className="bank-panel__head">
           <h2>{teller ? 'Riwayat laporan saya' : 'Daftar laporan teller'}</h2>

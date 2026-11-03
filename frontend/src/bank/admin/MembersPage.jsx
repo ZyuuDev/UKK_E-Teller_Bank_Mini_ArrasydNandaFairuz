@@ -103,6 +103,30 @@ export default function MembersPage() {
       />
       <Notice>{message}</Notice>
       <section className="bank-panel">
+        <div className="bank-actions" style={{ marginBottom: '1rem', gap: '0.5rem' }}>
+          <Button
+            variant={filter.account_status === 'inactive' ? 'primary' : 'secondary'}
+            onClick={() => {
+              const next = { ...draft, account_status: 'inactive' }
+              setDraft(next)
+              setFilter(next)
+              setPage(1)
+            }}
+          >
+            Belum aktif
+          </Button>
+          <Button
+            variant={filter.account_status === '' ? 'primary' : 'secondary'}
+            onClick={() => {
+              const next = { ...draft, account_status: '' }
+              setDraft(next)
+              setFilter(next)
+              setPage(1)
+            }}
+          >
+            Semua siswa
+          </Button>
+        </div>
         <form
           className="admin-filters"
           onSubmit={(event) => {

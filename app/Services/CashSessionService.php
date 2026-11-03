@@ -2,10 +2,12 @@
 
 namespace App\Services;
 
+use App\Models\CashRequest;
 use App\Models\DailyReconciliation;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class CashSessionService
@@ -18,6 +20,13 @@ class CashSessionService
     {
         $deposits = (int) Transaction::where('cash_session_id', $session->id)->where('transaction_type', 'Deposit')->sum('amount');
         $withdrawals = (int) Transaction::where('cash_session_id', $session->id)->where('transaction_type', 'Withdrawal')->sum('amount');
+        $additional = 0;
+        if (Schema::hasTable('cash_requests')) {
+            $additional = (int) DB::table('cash_requests')
+                ->where('cash_session_id', $session->id)
+                ->where('status', 'approved')
+                ->sum('amount');
+        }
         return [
             'id' => $session->id,
             'date' => $session->date,
@@ -25,7 +34,8 @@ class CashSessionService
             'opening_balance' => (int) $session->opening_balance,
             'total_deposits' => $deposits,
             'total_withdrawals' => $withdrawals,
-            'expected_closing_balance' => (int) $session->opening_balance + $deposits - $withdrawals,
+            'total_additional_cash' => $additional,
+            'expected_closing_balance' => (int) $session->opening_balance + $additional + $deposits - $withdrawals,
         ];
     }
 
@@ -117,6 +127,62 @@ class CashSessionService
             DB::table('cash_sessions')->where('id', $session->id)->update(['status' => 'approved', 'updated_at' => now()]);
             $this->audit->record($adminId, 'reconciliation.approved', 'daily_reconciliation', $report->id, ['cash_transfer_id' => $transferId, 'amount' => $amount]);
             return $report;
+        }, 5);
+    }
+
+    public function approveCashRequest(int $requestId, int $adminId): array
+    {
+        return DB::transaction(function () use ($requestId, $adminId) {
+            $request = CashRequest::whereKey($requestId)->lockForUpdate()->firstOrFail();
+            abort_if($request->status !== 'pending', 409, 'Pengajuan kas sudah diproses sebelumnya.');
+
+            $request->update([
+                'status' => 'approved',
+                'approved_by' => $adminId,
+                'approved_at' => now(),
+            ]);
+
+            if ($request->cash_session_id && (int) $request->amount > 0) {
+                foreach ([['account_code' => '101', 'entry_type' => 'Debit'], ['account_code' => '102', 'entry_type' => 'Credit']] as $entry) {
+                    DB::table('journal_entries')->insert([
+                        ...$entry,
+                        'transaction_id' => null,
+                        'cash_transfer_id' => null,
+                        'cash_session_id' => $request->cash_session_id,
+                        'amount' => $request->amount,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            }
+
+            $this->audit->record($adminId, 'cash_request.approved', 'cash_request', $request->id, [
+                'amount' => $request->amount,
+                'teller_id' => $request->teller_id,
+            ]);
+
+            return $request->toArray();
+        }, 5);
+    }
+
+    public function rejectCashRequest(int $requestId, int $adminId, string $notes): array
+    {
+        return DB::transaction(function () use ($requestId, $adminId, $notes) {
+            $request = CashRequest::whereKey($requestId)->lockForUpdate()->firstOrFail();
+            abort_if($request->status !== 'pending', 409, 'Pengajuan kas sudah diproses sebelumnya.');
+
+            $request->update([
+                'status' => 'rejected',
+                'rejection_notes' => $notes,
+                'approved_by' => $adminId,
+                'approved_at' => now(),
+            ]);
+
+            $this->audit->record($adminId, 'cash_request.rejected', 'cash_request', $request->id, [
+                'rejection_notes' => $notes,
+            ]);
+
+            return $request->toArray();
         }, 5);
     }
 }

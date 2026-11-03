@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Member;
 use App\Models\Saver;
 use App\Models\Transaction;
+use App\Services\AuditService;
 use App\Services\BankingService;
 use Illuminate\Http\Request;
 
@@ -70,5 +71,24 @@ class TransactionController extends Controller
     {
         $transaction = Transaction::where('request_id', $requestId)->where('teller_id', $request->user()->id)->firstOrFail();
         return response()->json(['data' => $transaction->receipt()]);
+    }
+
+    public function resetPin(Request $request, AuditService $audit)
+    {
+        $data = $request->validate([
+            'account_number' => 'required|string|max:20',
+        ]);
+        $saver = Saver::with('member')->where('account_number', $data['account_number'])->firstOrFail();
+        $saver->update(['security_pin' => '123456']);
+        $audit->record($request->user()->id, 'saver.pin_reset', 'saver', $saver->id, [
+            'account_number' => $saver->account_number,
+            'by_role' => 'teller',
+        ]);
+
+        return response()->json([
+            'data' => [
+                'message' => 'PIN rekening ' . $saver->account_number . ' (' . $saver->member->full_name . ') berhasil direset ke PIN default 123456.',
+            ],
+        ]);
     }
 }

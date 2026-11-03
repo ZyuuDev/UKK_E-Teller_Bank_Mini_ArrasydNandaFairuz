@@ -3,6 +3,7 @@ import { api, money, useResource } from './api'
 import { ReportsPage } from './AdminPages'
 import {
   Button,
+  ConfirmDialog,
   DataTable,
   DetailRow,
   EmptyState,
@@ -38,7 +39,6 @@ function todayWib() {
   return `${value('year')}-${value('month')}-${value('day')}`
 }
 
-/* Hook tetap terpasang ketika teller berpindah area. PIN hanya ada pada input DOM. */
 function useTellerWorkflow(tellerId, onChange, canCreate) {
   const [pending, setPending] = useState(() => readPending(tellerId))
   const [query, setQuery] = useState(() => readPending(tellerId)?.query || '')
@@ -103,88 +103,80 @@ function useTellerWorkflow(tellerId, onChange, canCreate) {
   }
   function prepare(event) {
     event.preventDefault()
-    if (pending || !found || !canCreate || busy) return
+    if (!found || pending || busy) return
     const amount = Number(draft.amount)
-    if (!Number.isSafeInteger(amount) || amount <= 0) {
-      setError('Nominal harus berupa rupiah bulat yang valid.')
-      return
-    }
-    setError('')
+    const isActivate = !found.saver
+    const body = isActivate
+      ? {
+          member_id: found.member.user_id,
+          amount,
+          request_id: crypto.randomUUID(),
+        }
+      : {
+          account_number: found.saver.account_number,
+          amount,
+          notes: draft.notes ? draft.notes.trim() : null,
+          request_id: crypto.randomUUID(),
+        }
     setReview({
-      operation: found.saver ? mode : 'activate',
-      amount,
-      notes: found.saver ? draft.notes || null : null,
-      member_id: found.member.user_id,
-      account_number: found.saver?.account_number,
+      operation: isActivate ? 'activate' : mode,
+      path: `/teller/${isActivate ? 'activate' : mode}`,
+      body,
       full_name: found.member.full_name,
       student_number: found.member.student_number,
     })
+    setError('')
   }
   async function submit(event) {
     event.preventDefault()
-    if (lock.current || (!pending && (!review || !canCreate))) return
-    const form = event.currentTarget
-    const pin = new FormData(form).get('security_pin')
+    if (lock.current || !review || busy) return
+    const pin = new FormData(event.currentTarget).get('security_pin')
+    const needsPin = ['activate', 'withdraw'].includes(review.operation)
+    if (needsPin && !pin) {
+      setError('PIN enam digit wajib diisi.')
+      return
+    }
+    const payload = {
+      path: review.path,
+      body: {
+        ...review.body,
+        ...(needsPin ? { security_pin: String(pin) } : {}),
+      },
+    }
     lock.current = true
     setBusy(true)
     setError('')
-    let request = pending
+    remember(payload)
     try {
-      if (!request) {
-        if (!crypto.randomUUID)
-          throw new Error(
-            'Gunakan localhost atau HTTPS agar identitas transaksi dapat dibuat.',
-          )
-        request = {
-          path: `/teller/${review.operation}`,
-          query,
-          body: {
-            request_id: crypto.randomUUID(),
-            amount: review.amount,
-            ...(review.operation === 'activate'
-              ? { member_id: review.member_id }
-              : { account_number: review.account_number, notes: review.notes }),
-          },
-        }
-        // Simpan identitas sebelum POST. Snapshot tidak memuat PIN.
-        remember(request)
-      }
-      const needsPin =
-        request.path.endsWith('/activate') || request.path.endsWith('/withdraw')
-      const result = await api(request.path, {
+      const result = await api(payload.path, {
         method: 'POST',
-        body: { ...request.body, ...(needsPin ? { security_pin: pin } : {}) },
+        body: payload.body,
       })
       remember(null)
       setReceipt(result.data)
-      setRejected(false)
       setFound(null)
       setReview(null)
-      setDraft({ amount: '', notes: '' })
-      setQuery('')
+      setRejected(false)
       onChange()
     } catch (failure) {
-      setError(
-        failure.message ||
-          'Koneksi terputus. Periksa hasil sebelum membuat transaksi baru.',
-      )
-      setRejected(
-        failure.status === 422 && !failure.message.includes('Identitas permintaan'),
-      )
-      onChange()
+      if ([401, 403, 422].includes(failure.status)) {
+        setRejected(true)
+        setError(failure.message)
+      } else {
+        setError(
+          `${failure.message} Permintaan dicatat sebagai tertunda. Tekan Periksa hasil sebelum mencoba lagi.`,
+        )
+      }
     } finally {
-      // Hapus input PIN pada sukses maupun gagal. PIN tidak menjadi React state.
-      const pinInput = form.elements.namedItem('security_pin')
-      if (pinInput) pinInput.value = ''
       lock.current = false
       setBusy(false)
     }
   }
   function correctRejected() {
-    if (!rejected || busy) return
+    if (!pending || !rejected) return
     remember(null)
-    setRejected(false)
     setReview(null)
+    setRejected(false)
     setError('')
   }
   return {
@@ -192,6 +184,7 @@ function useTellerWorkflow(tellerId, onChange, canCreate) {
     query,
     setQuery,
     found,
+    setFound,
     mode,
     setMode,
     draft,
@@ -213,6 +206,9 @@ function useTellerWorkflow(tellerId, onChange, canCreate) {
 }
 
 function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
+  const [confirmResetPin, setConfirmResetPin] = useState(false)
+  const [resetMessage, setResetMessage] = useState('')
+  const [resetBusy, setResetBusy] = useState(false)
   const snapshot = tx.pending?.body || tx.review
   const operation = tx.pending
     ? tx.pending.path.split('/').at(-1)
@@ -226,6 +222,24 @@ function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
         ? 'Setoran pertama'
         : 'Setoran'
   const step = tx.receipt ? 4 : verifying ? 3 : tx.found ? 2 : 1
+
+  async function handleResetPin() {
+    if (!tx.found?.saver) return
+    setResetBusy(true)
+    try {
+      const result = await api('/teller/reset-pin', {
+        method: 'POST',
+        body: { account_number: tx.found.saver.account_number },
+      })
+      setResetMessage(result.data?.message || 'PIN berhasil direset ke 123456.')
+      setConfirmResetPin(false)
+    } catch (err) {
+      tx.setError(err.message)
+    } finally {
+      setResetBusy(false)
+    }
+  }
+
   return (
     <section className="bank-panel">
       <h2>Pelayanan transaksi</h2>
@@ -240,6 +254,7 @@ function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
         )}
       </ol>
       <Notice error>{tx.error}</Notice>
+      {resetMessage && <Notice>{resetMessage}</Notice>}
       {!canCreate && !tx.pending && (
         <Notice>
           Sesi hari ini belum terbuka atau sedang diperiksa. Buka area Sesi kas dan muat
@@ -316,14 +331,28 @@ function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
                   </DetailRow>
                 </dl>
                 {tx.found.saver ? (
-                  <dl className="bank-detail-list">
-                    <DetailRow label="Saldo total">
-                      {money(tx.found.saver.balance)}
-                    </DetailRow>
-                    <DetailRow label="Saldo tersedia">
-                      {money(tx.found.saver.available_balance)}
-                    </DetailRow>
-                  </dl>
+                  <>
+                    <dl className="bank-detail-list">
+                      <DetailRow label="Saldo total">
+                        {money(tx.found.saver.balance)}
+                      </DetailRow>
+                      <DetailRow label="Saldo tersedia">
+                        {money(tx.found.saver.available_balance)}
+                      </DetailRow>
+                    </dl>
+                    <div className="bank-actions teller-gap">
+                      <Button
+                        variant="secondary"
+                        disabled={tx.busy}
+                        onClick={() => {
+                          setResetMessage('')
+                          setConfirmResetPin(true)
+                        }}
+                      >
+                        Reset PIN siswa (123456)
+                      </Button>
+                    </div>
+                  </>
                 ) : (
                   <Notice>
                     Setoran pertama minimal Rp10.000 akan membentuk dan mengaktifkan
@@ -430,22 +459,16 @@ function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
                 />
               </FormField>
             )}
-            <label className="bank-checkbox">
-              <input type="checkbox" required disabled={tx.busy} />
-              Identitas, nominal, dan uang fisik sudah diperiksa.
-            </label>
             <div className="bank-actions">
-              {!tx.pending && (
-                <Button
-                  variant="secondary"
-                  disabled={tx.busy}
-                  onClick={() => tx.setReview(null)}
-                >
-                  Kembali ke input
-                </Button>
-              )}
-              <Button type="submit" busy={tx.busy} disabled={!tx.pending && !canCreate}>
-                {tx.pending ? 'Kirim ulang dengan ID yang sama' : 'Simpan transaksi'}
+              <Button
+                variant="secondary"
+                disabled={tx.busy}
+                onClick={() => tx.setReview(null)}
+              >
+                Batal
+              </Button>
+              <Button type="submit" busy={tx.busy}>
+                Konfirmasi transaksi
               </Button>
             </div>
           </form>
@@ -457,6 +480,24 @@ function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
           description="Gunakan nomor siswa, nomor rekening, atau QR identitas dari sistem."
         />
       )}
+
+      <ConfirmDialog
+        open={confirmResetPin && !!tx.found?.saver}
+        title="Reset PIN rekening nasabah?"
+        onClose={() => setConfirmResetPin(false)}
+        onConfirm={handleResetPin}
+        busy={resetBusy}
+        confirmLabel="Ya, reset PIN"
+      >
+        <p>
+          Nasabah: <strong>{tx.found?.member?.full_name}</strong> ·{' '}
+          {tx.found?.saver?.account_number}
+        </p>
+        <p>
+          PIN akan diubah menjadi default <strong>123456</strong>. Siswa disarankan segera
+          mengganti PIN melalui menu profil aplikasi.
+        </p>
+      </ConfirmDialog>
     </section>
   )
 }
@@ -465,6 +506,14 @@ function OpenSession({ sessions, blocked, onChanged }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [showCashRequestModal, setShowCashRequestModal] = useState(false)
+  const [requestAmount, setRequestAmount] = useState('')
+  const [requestNotes, setRequestNotes] = useState('')
+  const [requestBusy, setRequestBusy] = useState(false)
+  const cashRequests = useResource('/teller/cash-requests')
+
+  const currentSession = (sessions.data || []).find((row) => row.date === todayWib())
+
   async function open(event) {
     event.preventDefault()
     const body = {
@@ -482,6 +531,29 @@ function OpenSession({ sessions, blocked, onChanged }) {
       setBusy(false)
     }
   }
+
+  async function handleCashRequest(event) {
+    event.preventDefault()
+    setRequestBusy(true)
+    setError('')
+    try {
+      await api('/teller/cash-requests', {
+        method: 'POST',
+        body: { amount: Number(requestAmount), notes: requestNotes.trim() },
+      })
+      setMessage('Pengajuan tambahan kas berhasil dikirim ke Admin.')
+      setShowCashRequestModal(false)
+      setRequestAmount('')
+      setRequestNotes('')
+      cashRequests.refresh()
+      onChanged()
+    } catch (failure) {
+      setError(failure.message)
+    } finally {
+      setRequestBusy(false)
+    }
+  }
+
   return (
     <section className="bank-panel">
       <h2>Sesi kas</h2>
@@ -503,10 +575,49 @@ function OpenSession({ sessions, blocked, onChanged }) {
             disabled={busy || blocked}
           />
         </FormField>
-        <Button type="submit" busy={busy} disabled={blocked}>
-          Buka atau periksa sesi hari ini
-        </Button>
+        <div className="bank-actions">
+          <Button type="submit" busy={busy} disabled={blocked}>
+            Buka atau periksa sesi hari ini
+          </Button>
+          {currentSession?.status === 'open' && (
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setError('')
+                setShowCashRequestModal(true)
+              }}
+            >
+              Ajukan tambahan kas
+            </Button>
+          )}
+        </div>
       </form>
+
+      <div className="bank-panel__head teller-gap">
+        <h3>Pengajuan tambahan kas hari ini</h3>
+        <Button variant="secondary" onClick={cashRequests.refresh}>
+          Muat ulang
+        </Button>
+      </div>
+      <ResourceState resource={cashRequests}>
+        <DataTable
+          caption="Pengajuan tambahan kas teller"
+          rows={cashRequests.data}
+          columns={[
+            ['date', 'Tanggal'],
+            ['amount', 'Nominal diajukan', 'money'],
+            ['notes', 'Alasan pengajuan'],
+            ['status', 'Status', 'status'],
+            [
+              'rejection_notes',
+              'Catatan penolakan',
+              null,
+              (row) => row.rejection_notes || '-',
+            ],
+          ]}
+        />
+      </ResourceState>
+
       <div className="bank-panel__head teller-gap">
         <h3>30 sesi terakhir</h3>
         <Button variant="secondary" onClick={sessions.refresh}>
@@ -521,10 +632,53 @@ function OpenSession({ sessions, blocked, onChanged }) {
             ['date', 'Tanggal'],
             ['status', 'Status', 'status'],
             ['opening_balance', 'Modal awal', 'money'],
+            ['total_additional_cash', 'Tambahan kas disetujui', 'money'],
             ['expected_closing_balance', 'Kas sistem', 'money'],
           ]}
         />
       </ResourceState>
+
+      <Modal
+        open={showCashRequestModal}
+        title="Ajukan tambahan modal kas loket"
+        onClose={() => setShowCashRequestModal(false)}
+      >
+        <form className="bank-form" onSubmit={handleCashRequest}>
+          <FormField label="Nominal tambahan kas (rupiah)" hint="Minimal Rp10.000">
+            <Input
+              type="number"
+              min={10000}
+              max={1000000000000}
+              step={1}
+              value={requestAmount}
+              onChange={(e) => setRequestAmount(e.target.value)}
+              required
+              placeholder="Contoh: 500000"
+            />
+          </FormField>
+          <FormField label="Alasan pengajuan kas">
+            <Input
+              value={requestNotes}
+              onChange={(e) => setRequestNotes(e.target.value)}
+              required
+              maxLength={255}
+              placeholder="Contoh: Kas loket menipis untuk melayani penarikan"
+            />
+          </FormField>
+          <div className="bank-actions bank-actions--end">
+            <Button
+              variant="secondary"
+              disabled={requestBusy}
+              onClick={() => setShowCashRequestModal(false)}
+            >
+              Batal
+            </Button>
+            <Button type="submit" busy={requestBusy}>
+              Kirim pengajuan ke Admin
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </section>
   )
 }
@@ -600,54 +754,51 @@ function CloseSession({ sessions, pending, onChanged }) {
                   <option value="">Pilih sesi</option>
                   {openSessions.map((row) => (
                     <option key={row.id} value={row.id}>
-                      {row.date} — kas sistem {money(row.expected_closing_balance)}
+                      {row.date} · Modal awal {money(row.opening_balance)}
                     </option>
                   ))}
                 </Select>
               </FormField>
               {selected && (
-                <div className="bank-stats teller-cash-stats">
-                  <StatCard
-                    label="Modal awal"
-                    value={money(selected.opening_balance)}
-                  />
-                  <StatCard
-                    label="Total setoran"
-                    value={money(selected.total_deposits)}
-                  />
-                  <StatCard
-                    label="Total penarikan"
-                    value={money(selected.total_withdrawals)}
-                  />
-                  <StatCard
-                    label="Kas sistem"
-                    value={money(selected.expected_closing_balance)}
-                  />
-                </div>
+                <>
+                  <dl className="bank-detail-list">
+                    <DetailRow label="Tanggal">{selected.date}</DetailRow>
+                    <DetailRow label="Modal awal">
+                      {money(selected.opening_balance)}
+                    </DetailRow>
+                    <DetailRow label="Total tambahan kas disetujui">
+                      {money(selected.total_additional_cash || 0)}
+                    </DetailRow>
+                    <DetailRow label="Total setoran">
+                      {money(selected.total_deposits)}
+                    </DetailRow>
+                    <DetailRow label="Total penarikan">
+                      {money(selected.total_withdrawals)}
+                    </DetailRow>
+                    <DetailRow label="Kas sistem saat ini">
+                      {money(selected.expected_closing_balance)}
+                    </DetailRow>
+                  </dl>
+                  <FormField
+                    label="Uang fisik aktual di laci (rupiah)"
+                    hint="Hitung uang fisik di laci tanpa memperhitungkan selisih."
+                  >
+                    <Input
+                      type="number"
+                      min={0}
+                      max={9000000000000}
+                      step={1}
+                      value={cash}
+                      onChange={(event) => setCash(event.target.value)}
+                      required
+                      disabled={busy}
+                    />
+                  </FormField>
+                  <Button type="submit" disabled={busy || !cash}>
+                    Lanjutkan ke pemeriksaan tutup kas
+                  </Button>
+                </>
               )}
-              <FormField label="Uang fisik hasil hitung (rupiah)">
-                <Input
-                  type="number"
-                  min={0}
-                  max={9000000000000}
-                  step={1}
-                  value={cash}
-                  onChange={(event) => setCash(event.target.value)}
-                  disabled={!!pending}
-                  required
-                />
-              </FormField>
-              {selected && cash !== '' && (
-                <p>
-                  Selisih sementara:{' '}
-                  <strong>
-                    {money(Number(cash) - Number(selected.expected_closing_balance))}
-                  </strong>
-                </p>
-              )}
-              <Button type="submit" disabled={!!pending || !selected}>
-                Periksa pengajuan
-              </Button>
             </form>
           )
         )}
@@ -688,11 +839,30 @@ function CloseSession({ sessions, pending, onChanged }) {
 
 export default function TellerPage({ tellerId }) {
   const sessions = useResource('/teller/cash-sessions')
+  const statusRes = useResource('/teller/service-status')
   const [area, setArea] = useState('session')
   const [scannerOpen, setScannerOpen] = useState(false)
   const [reportsVersion, setReportsVersion] = useState(0)
+  const [statusMessage, setStatusMessage] = useState('')
+
+  const activeStatus = statusRes.data?.data?.status || 'buka'
   const current = (sessions.data || []).find((row) => row.date === todayWib())
   const canCreate = !sessions.loading && !sessions.error && current?.status === 'open'
+
+  async function updateStatus(nextStatus) {
+    if (nextStatus === activeStatus) return
+    try {
+      await api('/teller/service-status', {
+        method: 'POST',
+        body: { status: nextStatus },
+      })
+      setStatusMessage(`Status layanan loket diubah menjadi ${nextStatus.toUpperCase()}.`)
+      statusRes.refresh()
+    } catch (err) {
+      setStatusMessage(err.message)
+    }
+  }
+
   function refresh() {
     sessions.refresh()
     setReportsVersion((value) => value + 1)
@@ -715,19 +885,65 @@ export default function TellerPage({ tellerId }) {
   ]
   return (
     <>
-      <div className="teller-session-strip">
-        <span>
-          Sesi hari ini:{' '}
-          {sessions.loading ? (
-            'memeriksa...'
-          ) : sessions.error ? (
-            'belum dapat diperiksa'
-          ) : current ? (
-            <Status value={current.status} />
-          ) : (
-            'belum dibuka'
-          )}
-        </span>
+      <div
+        className="teller-session-strip"
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '0.75rem',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+          <span>
+            Sesi hari ini:{' '}
+            {sessions.loading ? (
+              'memeriksa...'
+            ) : sessions.error ? (
+              'belum dapat diperiksa'
+            ) : current ? (
+              <Status value={current.status} />
+            ) : (
+              'belum dibuka'
+            )}
+          </span>
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              background: 'var(--bank-surface-muted, #f1f5f9)',
+              padding: '0.2rem 0.35rem',
+              borderRadius: '8px',
+            }}
+          >
+            <span style={{ fontSize: '0.8rem', fontWeight: 600, paddingLeft: '0.25rem' }}>
+              Status loket:
+            </span>
+            <Button
+              variant={activeStatus === 'buka' ? 'primary' : 'secondary'}
+              style={activeStatus === 'buka' ? { background: '#16a34a', borderColor: '#16a34a' } : {}}
+              onClick={() => updateStatus('buka')}
+            >
+              Buka
+            </Button>
+            <Button
+              variant={activeStatus === 'istirahat' ? 'primary' : 'secondary'}
+              style={activeStatus === 'istirahat' ? { background: '#d97706', borderColor: '#d97706' } : {}}
+              onClick={() => updateStatus('istirahat')}
+            >
+              Istirahat
+            </Button>
+            <Button
+              variant={activeStatus === 'tutup' ? 'primary' : 'secondary'}
+              style={activeStatus === 'tutup' ? { background: '#dc2626', borderColor: '#dc2626' } : {}}
+              onClick={() => updateStatus('tutup')}
+            >
+              Tutup
+            </Button>
+          </div>
+        </div>
         <div className="bank-actions">
           <Button
             disabled={tx.busy || !!tx.pending}
@@ -740,6 +956,7 @@ export default function TellerPage({ tellerId }) {
           </Button>
         </div>
       </div>
+      {statusMessage && <Notice>{statusMessage}</Notice>}
       {tx.pending && area !== 'transaction' && (
         <Notice>
           Ada transaksi yang belum selesai dikonfirmasi.{' '}
@@ -819,10 +1036,14 @@ export default function TellerPage({ tellerId }) {
                   timeZone: 'Asia/Jakarta',
                 })}
               </DetailRow>
-              <DetailRow label="Catatan">{tx.receipt.notes || 'Tidak ada'}</DetailRow>
-              <DetailRow label="ID permintaan">{tx.receipt.request_id}</DetailRow>
+              <DetailRow label="Nomor siswa">
+                {tx.receipt.student_number ?? 'Tidak tersedia'}
+              </DetailRow>
+              <DetailRow label="Catatan">
+                {tx.receipt.notes || 'Tidak ada catatan'}
+              </DetailRow>
             </dl>
-            <div className="bank-actions teller-gap">
+            <div className="bank-actions">
               <Button onClick={print}>Cetak bukti</Button>
               <Button variant="secondary" onClick={() => tx.setReceipt(null)}>
                 Selesai

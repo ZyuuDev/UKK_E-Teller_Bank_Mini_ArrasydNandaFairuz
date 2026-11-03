@@ -68,7 +68,6 @@ class PinRecoveryService
                 return false;
             }
             if (! Hash::check($code, $row->code_hash) || ! Hash::check($loginPassword, $user->password)) {
-                // Return false agar penambahan attempts tetap tersimpan saat transaksi commit.
                 DB::table('pin_reset_codes')->where('id', $row->id)->increment('attempts');
 
                 return false;
@@ -78,7 +77,7 @@ class PinRecoveryService
             if (! $member || $member->account_status !== 'active' || ! $saver) {
                 return false;
             }
-            $saver->update(['security_pin' => $pin]); // Model Saver memakai hashed cast.
+            $saver->update(['security_pin' => $pin]);
             DB::table('pin_reset_codes')->where('id', $row->id)->update([
                 'consumed_at' => now(), 'updated_at' => now(),
             ]);
