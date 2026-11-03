@@ -17,17 +17,17 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: 🐘 Setup PHP 8.3
+      - name: 🐘 Setup PHP 8.4
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          php-version: '8.4'
           extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, bcmath, fileinfo, gd, zip, curl, dom, simplexml, xmlreader, xmlwriter, libxml
           coverage: none
 
       - name: 📦 Install Composer Dependencies (Production)
         run: |
           cp -n .env.example .env || true
-          composer install --no-dev --prefer-dist --optimize-autoloader --no-progress --no-interaction --ignore-platform-req=ext-*
+          composer install --no-dev --prefer-dist --optimize-autoloader --no-progress --no-interaction --ignore-platform-reqs
 
       - name: 🟢 Setup Node.js 20
         uses: actions/setup-node@v4
