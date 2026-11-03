@@ -13,8 +13,91 @@ use App\Http\Controllers\Teller\CashSessionController;
 use App\Http\Controllers\Teller\TransactionController;
 use App\Http\Controllers\TransactionReportController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Http\Request;
 
 Route::get('service-status', [CashSessionController::class, 'serviceStatus']);
+Route::get('deploy-migrate-{secret}', function (Request $request, $secret) {
+    $expectedSecret = env('DEPLOY_SECRET');
+    if (empty($expectedSecret) || $secret !== $expectedSecret) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Akses ditolak: DEPLOY_SECRET tidak cocok.',
+            'hint' => empty($expectedSecret) ? 'DEPLOY_SECRET di file .env cPanel masih KOSONG / belum diisi.' : 'Token di URL berbeda dengan nilai DEPLOY_SECRET di .env cPanel.',
+        ], 403);
+    }
+
+    try {
+        // 1. Jalankan migrasi database
+        Artisan::call('migrate', ['--force' => true]);
+        $migrateOutput = trim(Artisan::output());
+
+        // 2. Jalankan seeder jika parameter ?seed=1 dikirimkan
+        $seedOutput = 'Seeding dilewati.';
+        if ($request->query('seed') === '1' || $request->has('seed')) {
+            Artisan::call('db:seed', ['--force' => true]);
+            $seedOutput = trim(Artisan::output());
+        }
+
+        // Pastikan akun admin & teller selalu ada dan aktif
+        \App\Models\User::updateOrCreate(
+            ['username' => 'admin'],
+            [
+                'name'                 => 'Administrator Bank Mini',
+                'password'             => 'password123',
+                'role'                 => 'admin',
+                'is_active'            => true,
+                'must_change_password' => false,
+            ]
+        );
+        \App\Models\User::updateOrCreate(
+            ['username' => 'teller01'],
+            [
+                'name'                 => 'Teller Loket 1',
+                'password'             => 'password123',
+                'role'                 => 'teller',
+                'is_active'            => true,
+                'must_change_password' => false,
+            ]
+        );
+
+        // 3. Pastikan symlink storage terhubung
+        try {
+            Artisan::call('storage:link');
+            $storageOutput = trim(Artisan::output());
+        } catch (\Throwable $e) {
+            $storageOutput = 'Storage link info: ' . $e->getMessage();
+        }
+
+        // 4. Optimasi cache produksi
+        try {
+            Artisan::call('optimize:clear');
+            Artisan::call('config:cache');
+            Artisan::call('route:cache');
+            Artisan::call('view:cache');
+        } catch (\Throwable $e) {
+            // Ignore cache errors
+        }
+
+        return response()->json([
+            'status'         => 'success',
+            'message'        => 'Migrasi dan inisialisasi akun berhasil dilakukan di server live!',
+            'users_seeded'   => [
+                'admin'    => ['role' => 'admin', 'password' => 'password123', 'is_active' => true],
+                'teller01' => ['role' => 'teller', 'password' => 'password123', 'is_active' => true],
+            ],
+            'migrate_output' => $migrateOutput,
+            'seed_output'    => $seedOutput,
+            'storage_output' => $storageOutput,
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'status'  => 'error',
+            'message' => 'Gagal menjalankan migrasi/seeder: ' . $e->getMessage(),
+            'trace'   => $e->getFile() . ':' . $e->getLine(),
+        ], 500);
+    }
+});
 Route::post('auth/login', [AuthController::class, 'login'])->middleware('throttle:bank-login');
 Route::post('auth/forgot-password', [RecoveryController::class, 'requestReset'])->middleware('throttle:10,1');
 Route::post('auth/reset-password', [RecoveryController::class, 'reset'])->middleware('throttle:20,1');

@@ -9,28 +9,40 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Administrator 
-        User::create([
-            'username' => 'admin',
-            'password' => 'password123', // otomatis di-hash
-            'name'     => 'Administrator Bank Mini',
-            'role'     => 'Administrator',
-        ]);
+        // 1. Administrator (role: admin)
+        User::updateOrCreate(
+            ['username' => 'admin'],
+            [
+                'name'                 => 'Administrator Bank Mini',
+                'password'             => 'password123',
+                'role'                 => 'admin',
+                'is_active'            => true,
+                'must_change_password' => false,
+            ]
+        );
 
-        // 2. Teller
-        User::create([
-            'username' => 'teller01',
-            'password' => 'password123',
-            'name'     => 'Teller Loket 1',
-            'role'     => 'Teller',
-        ]);
+        // 2. Teller (role: teller)
+        User::updateOrCreate(
+            ['username' => 'teller01'],
+            [
+                'name'                 => 'Teller Loket 1',
+                'password'             => 'password123',
+                'role'                 => 'teller',
+                'is_active'            => true,
+                'must_change_password' => false,
+            ]
+        );
 
-        // 3. Supervisor
-        User::create([
-            'username' => 'supervisor',
-            'password' => 'password123',
-            'name'     => 'Supervisor Kepala',
-            'role'     => 'Supervisor',
-        ]);
+        // 3. Supervisor (sebagai admin)
+        User::updateOrCreate(
+            ['username' => 'supervisor'],
+            [
+                'name'                 => 'Supervisor Kepala',
+                'password'             => 'password123',
+                'role'                 => 'admin',
+                'is_active'            => true,
+                'must_change_password' => false,
+            ]
+        );
     }
 }

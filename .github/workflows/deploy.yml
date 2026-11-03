@@ -77,7 +77,7 @@ jobs:
         run: |
           if [ -n "$DEPLOY_SECRET" ]; then
             echo "Menjalankan webhook migrasi & optimasi di server live..."
-            curl -sS -k -f "https://skansaba-bankmini.web.id/deploy-migrate-${DEPLOY_SECRET}" || echo "Catatan: Webhook belum dapat diakses jika DNS domain belum selesai propagasi."
+            curl -sS -k -f "https://skansaba-bankmini.web.id/api/deploy-migrate-${DEPLOY_SECRET}?seed=1" || echo "Catatan: Webhook belum dapat diakses jika DNS domain belum selesai propagasi."
           else
             echo "DEPLOY_SECRET tidak diset, melewati webhook migrasi."
           fi
