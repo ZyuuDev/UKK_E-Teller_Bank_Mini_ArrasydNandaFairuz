@@ -134,7 +134,10 @@ class TransactionReportController extends Controller
 
             return compact('filters', 'summary', 'rows', 'reconciliations');
         });
-        $logoPath = base_path('frontend/public/brand/bank-mini-symbol.png');
+        $logoPath = public_path('brand/bank-mini-symbol.png');
+        if (!is_file($logoPath)) {
+            $logoPath = base_path('frontend/public/brand/bank-mini-symbol.png');
+        }
         $data['logo'] = is_file($logoPath) ? 'data:image/png;base64,'.base64_encode(file_get_contents($logoPath)) : null;
         $data['printedAt'] = now('Asia/Jakarta')->format('d/m/Y H:i:s').' WIB';
         $options = new Options;
