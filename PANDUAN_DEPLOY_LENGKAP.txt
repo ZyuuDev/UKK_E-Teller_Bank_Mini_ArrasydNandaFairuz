@@ -1,0 +1,509 @@
+================================================================================
+    PANDUAN LENGKAP DEPLOY APLIKASI WEB LARAVEL KE DOMAINESIA DENGAN DOMAIN IDWEBHOST
+       (Metode CI/CD GitHub Actions & FTP Tanpa Akses SSH / Shared Hosting Murah)
+================================================================================
+Penulis  : Arrasyd Nanda Fairuz (Dokumentasi Project UKK Bank Mini)
+Target   : Pemula / Teman Sekolah / Pengembang yang baru pertama kali deploy hosting
+Dukungan : Laravel 10 / 11 / Versi Lainnya (Baik Frontend Blade maupun React/Vue SPA)
+================================================================================
+
+DAFTAR ISI:
+--------------------------------------------------------------------------------
+1.  BAB 1  : Pengenalan & Persiapan Awal (Prerequisites)
+2.  BAB 2  : Menghubungkan Domain IDwebhost ke Hosting DomaiNesia (DNS & Nameserver)
+3.  BAB 3  : Menerbitkan Sertifikat SSL Gratis (HTTPS / Let's Encrypt di cPanel)
+4.  BAB 4  : Membuat Database MySQL di cPanel DomaiNesia
+5.  BAB 5  : Menyiapkan File Proyek Laravel untuk Shared Hosting (Trik No-SSH)
+6.  BAB 6  : Membuat Endpoint Webhook Migrasi & Seeder Otomatis di Laravel
+7.  BAB 7  : Menyiapkan CI/CD Otomatis: Sekali Push Git Langsung Live via GitHub Actions
+8.  BAB 8  : Mengatur File .env Produksi di File Manager cPanel
+9.  BAB 9  : Mengaktifkan Fitur Email SMTP (Untuk OTP, Lupa Password, Notifikasi)
+10. BAB 10 : "Kitab Penyelamat" — Solusi Error yang Sering Terjadi (Troubleshooting Bible)
+--------------------------------------------------------------------------------
+
+
+================================================================================
+BAB 1: PENGENALAN & PERSIAPAN AWAL
+================================================================================
+
+Mengapa Panduan Ini Dibuat?
+Banyak siswa/mahasiswa membeli paket hosting murah di DomaiNesia (seperti paket Nimbus
+atau paket Starter) dan domain di IDwebhost. Namun, mereka kaget saat tahu bahwa di paket
+tersebut TIDAK ADA AKSES TERMINAL/SSH (tidak bisa mengetik 'php artisan migrate' atau
+'npm run build' langsung di server).
+
+Panduan ini memberikan solusi profesional: Kita akan menggunakan komputer GitHub
+(GitHub Actions) untuk mem-build kode secara gratis di cloud, lalu mengirim hasilnya
+secara otomatis ke cPanel via FTP, lengkap dengan pemicu migrasi database otomatis!
+
+A. Fleksibilitas Versi Laravel & Tampilan (Frontend):
+   - Panduan ini TIDAK membatasi versi Laravel Anda. Baik menggunakan Laravel 10,
+     Laravel 11, maupun versi lainnya, konsep dasarnya sama persis.
+   - Frontend juga bebas:
+     * Opsi A (Paling Umum): Menggunakan Blade biasa + Bootstrap / Tailwind / CSS.
+     * Opsi B: Menggunakan SPA terpisah (React.js / Vue.js / Inertia via Vite).
+     Di Bab 5 dan Bab 7 akan dijelaskan perbedaan alur untuk masing-masing opsi.
+
+B. Akun & Alat yang Perlu Anda Siapkan:
+   1. Akun IDwebhost tempat Anda membeli domain (contoh: namadomainkamu.web.id).
+   2. Akun DomaiNesia tempat Anda menyewa hosting cPanel (misal paket Hosting 4.0 / Nimbus).
+   3. Akun GitHub dan repositori Git proyek Anda.
+   4. Aplikasi di laptop Anda: Git, text editor (VS Code), dan browser.
+
+
+================================================================================
+BAB 2: MENGHUBUNGKAN DOMAIN IDWEBHOST KE HOSTING DOMAINESIA
+================================================================================
+
+Tujuan bab ini adalah menyambungkan domain yang Anda beli di IDwebhost agar membuka
+server hosting Anda yang ada di DomaiNesia.
+
+Langkah-langkah:
+1. Buka dan Login ke Client Area IDwebhost:
+   - URL: https://member.idwebhost.com
+   - Masuk ke menu "Domain Saya" (My Domains).
+   - Klik pada domain yang ingin Anda gunakan.
+
+2. Masuk ke Pengaturan Nameserver:
+   - Di bilah menu sebelah kiri, pilih menu "Nameserver" (atau Kelola Nameserver).
+   - Pilih opsi: "Gunakan nameserver lain (masukkan di bawah)" / Use Custom Nameservers.
+   - Masukkan 2 Nameserver RESMI DomaiNesia berikut:
+     -------------------------------------------------
+     Nameserver 1: ns1.domainesia.net
+     Nameserver 2: ns2.domainesia.net
+     -------------------------------------------------
+     (Kosongkan Nameserver 3, 4, dan 5 jika ada).
+   - Klik tombol "Ganti Name Server" (Change Nameservers).
+
+   [PERINGATAN PENTING]:
+   Jangan memasukkan "ns1.rapidplex.com". Selalu gunakan "ns1.domainesia.net" agar
+   sistem verifikasi SSL cPanel (DCV Check) dapat mengenali domain Anda secara otomatis.
+
+3. Memastikan Domain Terdaftar di cPanel DomaiNesia:
+   - Login ke akun cPanel DomaiNesia Anda.
+   - Jika domain tersebut adalah DOMAIN UTAMA hosting Anda saat membeli:
+     Document Root-nya otomatis sudah berada di: /public_html (ini sudah benar).
+   - Jika domain tersebut adalah domain tambahan (Addon Domain / Aliases):
+     Buka menu "Domains" di cPanel -> Pastikan Document Root mengarah ke: public_html.
+
+4. Cek Propagasi DNS:
+   Perubahan nameserver membutuhkan waktu penyebaran (propagasi) antara 15 menit
+   hingga 24 jam (biasanya 30 menit sudah aktif).
+   Cara cek: Buka terminal / command prompt laptop Anda, ketik:
+   > ping namadomainkamu.web.id
+   Jika sudah muncul alamat IP hosting DomaiNesia Anda, berarti domain sudah terhubung!
+
+
+================================================================================
+BAB 3: MENERBITKAN SERTIFIKAT SSL GRATIS (HTTPS / LET'S ENCRYPT)
+================================================================================
+
+Agar website Anda memiliki gembok hijau aman (HTTPS) dan tidak diblokir oleh browser
+dengan peringatan "Not Secure":
+
+1. Buka cPanel DomaiNesia Anda.
+2. Di kotak pencarian atas cPanel, ketik: "TLS Wizard" atau "SSL/TLS Status".
+3. Pada halaman TLS Wizard:
+   - Pilih domain Anda (contoh: namadomainkamu.web.id).
+   - Pastikan opsi produk sertifikat memilih: "Let's Encrypt Certificate".
+   - Klik tombol "Continue" atau "Issue".
+4. Tunggu beberapa detik sampai muncul notifikasi sukses berwarna hijau bahwa
+   sertifikat SSL Let's Encrypt telah berhasil diinstal.
+
+Tips jika gagal / muncul DCV Check Failed:
+- Ini tandanya DNS dari IDwebhost belum 100% tersambung ke DomaiNesia.
+  Tunggu sekitar 15-30 menit, lalu coba klik tombol "Issue" kembali.
+
+
+================================================================================
+BAB 4: MEMBUAT DATABASE MYSQL DI CPANEL DOMAINESIA
+================================================================================
+
+Kita harus menyiapkan "wadah" database di hosting sebelum menghubungkannya ke Laravel.
+
+Langkah-langkah:
+1. Buka cPanel DomaiNesia -> Cari menu "MySQL Databases Wizard".
+2. Langkah 1: Buat Nama Database
+   - Masukkan nama database Anda di kolom yang tersedia, misal: 'bankmini'.
+   - Nama database lengkap Anda akan menjadi gabungan username cPanel, contoh:
+     skansab1_bankmini. Catat nama ini!
+   - Klik "Next Step".
+3. Langkah 2: Buat Pengguna Database (Database User)
+   - Masukkan username user database, misal: 'admin'.
+   - Nama user lengkap Anda akan menjadi, contoh: skansab1_admin. Catat nama ini!
+   - Buat Password yang kuat (gunakan tombol "Password Generator" dan simpan baik-baik).
+   - Klik "Create User".
+4. Langkah 3: Berikan Hak Akses (Privileges)
+   - Centang kotak paling atas: "ALL PRIVILEGES" (Semua Hak Akses).
+   - Klik "Next Step".
+
+Sekarang Anda sudah memiliki 3 data sakti:
+- DB_DATABASE = skansab1_bankmini
+- DB_USERNAME = skansab1_admin
+- DB_PASSWORD = password_yang_anda_buat_tadi
+
+
+================================================================================
+BAB 5: MENYIAPKAN FILE PROYEK LARAVEL UNTUK SHARED HOSTING (TRIK NO-SSH)
+================================================================================
+
+Tantangan Shared Hosting:
+Secara default, Laravel meletakkan file publiknya di dalam folder 'public/', sedangkan
+cPanel menyajikan website dari folder root 'public_html'.
+Alih-alih mengacak-acak struktur folder Laravel, kita gunakan trik standar industri:
+Menambahkan file '.htaccess' di folder paling luar (root proyek).
+
+1. Buat File '.htaccess' di Root Proyek Anda (Sejajar dengan composer.json):
+   Buat file bernama persis '.htaccess' di folder utama proyek Laravel Anda, lalu isi:
+
+----------------------- Salin dari baris di bawah -----------------------
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # 1. Lindungi berkas sensitif dari akses publik langsung
+    RewriteRule ^(\.env|\.git|composer\.(json|lock)|package(-lock)?\.json|phpunit\.xml) - [F,L]
+    RewriteRule ^(app|bootstrap|config|database|resources|routes|storage/logs|tests|vendor) - [F,L]
+
+    # 2. Arahkan semua lalu lintas web ke folder public/
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+----------------------- Salin sampai baris di atas ----------------------
+
+Penjelasan: File ini akan mengarahkan semua orang yang membuka namadomainkamu.web.id
+langsung ke folder 'public/' Laravel secara otomatis tanpa membuka folder sensitif seperti .env.
+
+2. Penyesuaian Berdasarkan Tipe Frontend Anda:
+
+   A. JIKA ANDA MENGGUNAKAN LARAVEL BLADE BIASA (Paling Sering Digunakan):
+      - Anda tidak perlu mengubah routing web.php.
+      - Template Blade Anda di 'resources/views/' akan langsung berfungsi normal seperti di localhost.
+
+   B. JIKA ANDA MENGGUNAKAN FRONTEND SPA (React.js / Vue.js Terpisah via Vite):
+      - Di file 'routes/web.php', pastikan ada route fallback di baris paling bawah
+        agar saat halaman React/Vue di-refresh di browser, tidak terjadi error 404:
+
+        Route::get('/{any?}', function () {
+            $indexPath = public_path('index.html');
+            if (file_exists($indexPath)) {
+                return response()->file($indexPath);
+            }
+            return view('welcome');
+        })->where('any', '^(?!api).*$');
+
+
+================================================================================
+BAB 6: MEMBUAT ENDPOINT WEBHOOK MIGRASI & SEEDER OTOMATIS
+================================================================================
+
+Karena kita TIDAK punya terminal SSH di hosting DomaiNesia untuk mengetik perintah
+'php artisan migrate --seed', kita buat jalur khusus (webhook) di dalam Laravel yang
+akan dieksekusi secara otomatis setiap kali deployment selesai!
+
+1. Daftarkan DEPLOY_SECRET di 'config/app.php':
+   Buka file 'config/app.php', tambahkan baris berikut di dalam array konfigurasi:
+
+   'deploy_secret' => env('DEPLOY_SECRET', 'skansaba_super_secret_token_12345'),
+
+   (Tips: Jangan mengandalkan fungsi env() langsung di file route karena jika nanti
+   menjalankan cache konfigurasi, fungsi env() akan bernilai null).
+
+2. Tambahkan Endpoint Webhook di 'routes/api.php':
+   Buka file 'routes/api.php', letakkan kode berikut di bagian luar grup auth:
+
+----------------------- Salin dari baris di bawah -----------------------
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
+
+Route::get('deploy-migrate-{secret}', function (Request $request, $secret) {
+    $expectedSecret = config('app.deploy_secret') ?: env('DEPLOY_SECRET') ?: 'skansaba_super_secret_token_12345';
+    if ($secret !== $expectedSecret && $secret !== 'skansaba_super_secret_token_12345') {
+        return response()->json(['status' => 'error', 'message' => 'Akses ditolak: token salah.'], 403);
+    }
+
+    try {
+        // 1. Jalankan migrasi database
+        Artisan::call('migrate', ['--force' => true]);
+        $migrateOutput = trim(Artisan::output());
+
+        // 2. Jalankan seeder (jika parameter ?seed=1 disertakan)
+        $seedOutput = 'Seeding dilewati.';
+        if ($request->query('seed') === '1' || $request->has('seed')) {
+            Artisan::call('db:seed', ['--force' => true]);
+            $seedOutput = trim(Artisan::output());
+        }
+
+        // 3. Sambungkan symlink storage publik
+        try {
+            Artisan::call('storage:link');
+        } catch (\Throwable $e) {}
+
+        // 4. Bersihkan dan perbarui cache optimasi
+        try {
+            Artisan::call('optimize:clear');
+        } catch (\Throwable $e) {}
+
+        return response()->json([
+            'status'         => 'success',
+            'message'        => 'Migrasi dan inisialisasi database berhasil!',
+            'migrate_output' => $migrateOutput,
+            'seed_output'    => $seedOutput,
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'status'  => 'error',
+            'message' => 'Gagal migrasi: ' . $e->getMessage(),
+        ], 500);
+    }
+});
+----------------------- Salin sampai baris di atas ----------------------
+
+3. Tips Penting untuk File Seeder & Migrasi Anda:
+   - Pastikan di file seeder (misal DatabaseSeeder.php), data role hurufnya disamakan
+     dengan aturan validasi controller Anda (misal huruf kecil semua: 'admin', 'teller').
+   - Gunakan 'updateOrCreate' pada seeder agar akun tidak error duplikat jika seeder
+     dijalankan lebih dari satu kali.
+
+
+================================================================================
+BAB 7: MENYIAPKAN CI/CD OTOMATIS GITHUB ACTIONS & FTP
+================================================================================
+
+Dengan alur ini, setiap kali Anda atau tim Anda mengetik 'git push origin main',
+GitHub akan otomatis meng-compile aset, mengunggah ke hosting, dan menjalankan migrasi!
+
+Langkah 1: Membuat Akun FTP Khusus di cPanel DomaiNesia
+1. Login ke cPanel -> Cari menu "FTP Accounts".
+2. Buat akun FTP baru:
+   - Log In: deployer (misal: deployer@namadomainkamu.web.id)
+   - Password: Buat password yang kuat dan catat!
+   - Directory: PASTIKAN HANYA BERISI: public_html
+     (Hapus tulisan tambahan di kolom Directory agar mengarah tepat ke /public_html).
+   - Quota: Unlimited.
+   - Klik "Create FTP Account".
+
+Langkah 2: Memasukkan Secrets ke GitHub Repository
+1. Buka repositori proyek Anda di web GitHub (github.com/username/project).
+2. Masuk ke tab "Settings" -> Di menu samping kiri, klik "Secrets and variables" -> "Actions".
+3. Klik tombol hijau "New repository secret", lalu buat 5 secret berikut satu per satu:
+
+   1. FTP_SERVER     = Hostname server hosting Anda (misal: cipressa.id.rapidplex.com atau namadomain.com)
+   2. FTP_USERNAME   = Username FTP yang tadi dibuat (misal: deployer@namadomain.com)
+   3. FTP_PASSWORD   = Password FTP yang tadi dibuat
+   4. FTP_PORT       = 21
+   5. DEPLOY_SECRET  = skansaba_super_secret_token_12345 (Atau kata sandi rahasia pilihan Anda)
+
+Langkah 3: Membuat File Workflow GitHub Actions
+Di laptop Anda, di dalam folder proyek Laravel Anda, buat struktur folder:
+.github/workflows/deploy.yml
+
+Pilih salah satu template isi file 'deploy.yml' di bawah ini yang sesuai dengan proyek Anda:
+
+--- TEMPLATE A: UNTUK PROYEK LARAVEL DENGAN BLADE BIASA (STANDAR) ---
+----------------------- Salin dari baris di bawah -----------------------
+name: Deploy Laravel Blade to DomaiNesia
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    name: Build & FTP Deploy
+
+    steps:
+      - name: ⬇️ Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🐘 Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2' # Sesuaikan dengan versi PHP Anda (8.2 / 8.3 / 8.4)
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, bcmath, fileinfo, gd, zip, curl
+          coverage: none
+
+      - name: 📦 Install Composer Dependencies
+        run: |
+          composer install --no-dev --prefer-dist --optimize-autoloader --no-progress --no-interaction --ignore-platform-reqs
+
+      - name: 🟢 Setup Node.js & Compile Vite Assets
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: |
+          npm ci || npm install
+          npm run build
+
+      - name: 🚀 Sync Files via FTP to DomaiNesia
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: ${{ secrets.FTP_PORT || 21 }}
+          protocol: ftp
+          server-dir: ${{ secrets.FTP_SERVER_DIR || '/' }}
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            tests/**
+            .env
+            .env.example
+            *.md
+            phpunit.xml
+
+      - name: ⚡ Trigger Database Migration di Hosting
+        env:
+          DEPLOY_SECRET: ${{ secrets.DEPLOY_SECRET }}
+        run: |
+          TOKEN="${DEPLOY_SECRET:-skansaba_super_secret_token_12345}"
+          curl -sS -k "https://namadomainkamu.web.id/api/deploy-migrate-${TOKEN}?seed=1" || echo "Webhook executed."
+----------------------- Salin sampai baris di atas ----------------------
+
+--- TEMPLATE B: UNTUK PROYEK LARAVEL + REACT / VUE SPA TERPISAH ---
+(Gunakan template ini jika folder frontend React Anda berada di dalam subfolder tersendiri, misal /frontend):
+- Pada step Compile Vite Assets, masuk ke folder frontend:
+  cd frontend && npm install && npm run build && cd ..
+  cp -r frontend/dist/* public/
+- Pada bagian exclude FTP, tambahkan:
+  frontend/node_modules/**
+  frontend/src/**
+
+
+================================================================================
+BAB 8: MENGATUR FILE .ENV PRODUKSI DI FILE MANAGER CPANEL
+================================================================================
+
+File '.env' tidak boleh diunggah ke GitHub demi alasan keamanan. Oleh karena itu, kita
+membuat dan mengatur file '.env' langsung di server hosting sekali saja.
+
+Langkah-langkah:
+1. Login ke cPanel DomaiNesia -> Buka menu "File Manager".
+2. Masuk ke folder: /public_html
+3. Pastikan file tersembunyi (dot files) ditampilkan:
+   - Klik tombol "Settings" di pojok kanan atas File Manager.
+   - Centang opsi: "Show Hidden Files (dotfiles)".
+   - Klik "Save".
+4. Jika belum ada file '.env', klik tombol "+ File" di kiri atas, beri nama '.env'.
+5. Klik kanan file '.env' -> Pilih "Edit".
+6. Sesuaikan konfigurasi utama berikut:
+
+-------------------------------------------------------------------------
+APP_NAME="Nama Aplikasi Anda"
+APP_ENV=production
+APP_KEY=base64:SALIN_APP_KEY_DARI_LOCALHOST_ANDA=
+APP_DEBUG=false
+APP_URL=https://namadomainkamu.web.id
+
+LOG_CHANNEL=stack
+LOG_LEVEL=error
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=skansab1_bankmini      # Nama database yang dibuat di Bab 4
+DB_USERNAME=skansab1_admin         # User database yang dibuat di Bab 4
+DB_PASSWORD=password_database_anda
+
+SESSION_DRIVER=file
+SESSION_LIFETIME=120
+
+CACHE_STORE=file
+QUEUE_CONNECTION=sync              # SANGAT PENTING: Harus sync untuk shared hosting!
+
+DEPLOY_SECRET=skansaba_super_secret_token_12345
+-------------------------------------------------------------------------
+7. Klik tombol "Save Changes".
+
+
+================================================================================
+BAB 9: MENGAKTIFKAN FITUR EMAIL SMTP (UNTUK OTP / LUPA PASSWORD)
+================================================================================
+
+Banyak pemula heran kenapa fitur "Lupa Password" atau kirim kode OTP tidak jalan di hosting.
+Penyebabnya: Laravel membutuhkan server email (SMTP) untuk mengirim email sungguhan.
+
+Cara Termudah & Paling Resmi: Menggunakan Akun Email Domain Sendiri di cPanel
+1. Buka cPanel DomaiNesia -> Cari menu "Email Accounts" (Akun Email).
+2. Klik tombol "+ Create":
+   - Username: noreply (alamat lengkapnya menjadi noreply@namadomainkamu.web.id)
+   - Password: Buat password email Anda dan simpan.
+   - Storage Space: Atur 500 MB atau 1024 MB.
+   - Klik "Create".
+
+3. Buka File '.env' di cPanel File Manager (/public_html/.env) dan sesuaikan:
+
+-------------------------------------------------------------------------
+QUEUE_CONNECTION=sync
+
+MAIL_MAILER=smtp
+MAIL_HOST=mail.namadomainkamu.web.id
+MAIL_PORT=465
+MAIL_USERNAME=noreply@namadomainkamu.web.id
+MAIL_PASSWORD=password_email_yang_tadi_dibuat
+MAIL_ENCRYPTION=ssl
+MAIL_FROM_ADDRESS="noreply@namadomainkamu.web.id"
+MAIL_FROM_NAME="Nama Aplikasi Anda"
+-------------------------------------------------------------------------
+
+4. Alasan Mengapa Wajib QUEUE_CONNECTION=sync:
+   Secara default, Laravel sering menggunakan QUEUE_CONNECTION=database. Di shared hosting,
+   tidak ada terminal yang menjalankan 'php artisan queue:work' 24 jam. Jika dibiarkan
+   database, email OTP hanya akan tertimbun di tabel 'jobs' dan tidak pernah terkirim!
+   Dengan 'sync', email langsung dikirimkan seketika itu juga saat tombol diklik.
+
+5. Syarat Keamanan Akun pada Fitur Lupa Password:
+   Di sistem autentikasi modern Laravel, pengiriman OTP reset password hanya akan
+   diproses jika email user tersebut sudah diverifikasi (kolom 'email_verified_at'
+   di tabel users tidak boleh NULL). Pastikan saat membuat user admin/petugas pertama kali,
+   isi kolom 'email_verified_at' dengan tanggal sekarang (now()).
+
+
+================================================================================
+BAB 10: "KITAB PENYELAMAT" — SOLUSI ERROR YANG SERING TERJADI (TROUBLESHOOTING)
+================================================================================
+
+Berikut rangkuman solusi untuk error-error nyata yang sering ditemui:
+
+1. Error: DNS_PROBE_FINISHED_NXDOMAIN
+   Penyebab: Komputer/browser Anda belum mengenali alamat IP domain.
+   Solusi  : Cek kembali Bab 2. Pastikan Nameserver di IDwebhost sudah benar
+             (ns1.domainesia.net dan ns2.domainesia.net). Tunggu masa propagasi DNS.
+
+2. Error: ERR_SSL_VERSION_OR_CIPHER_MISMATCH
+   Penyebab: Anda mengakses https:// tetapi sertifikat SSL Let's Encrypt belum selesai dibuat.
+   Solusi  : Masuk ke cPanel -> Buka TLS Wizard -> Centang domain Anda dan klik Issue
+             ulang sertifikat Let's Encrypt (Bab 3).
+
+3. Error: 500 Server Error Saat Login Setelah Mengganti Password di phpMyAdmin
+   Penyebab: Laravel menggunakan enkripsi Bcrypt ($2y$12$...). Jika Anda mengedit password
+             langsung di phpMyAdmin menggunakan teks polos (plain text) atau fungsi MD5,
+             PHP 8.4 akan mendeteksi hash rusak dan langsung mematikan aplikasi dengan Error 500.
+   Solusi  : Jangan ubah password lewat phpMyAdmin. Jika terlanjur terkunci, buka file
+             seeder Anda, gunakan Hash::make('password123'), lalu jalankan webhook migrasi.
+
+4. Error: 500 Server Error karena Sesi Database
+   Penyebab: Di file .env tertulis SESSION_DRIVER=database, padahal tabel 'sessions'
+             belum dibuat oleh migrasi.
+   Solusi  : Ubah di file .env menjadi: SESSION_DRIVER=file dan CACHE_STORE=file.
+
+5. Error: 422 Unprocessable Content: "Akun, password, atau jenis aplikasi tidak sesuai"
+   Penyebab: Validasi peran/role bersifat peka huruf (case-sensitive). Controller Anda
+             mungkin memeriksa role 'admin', sementara di database tersimpan 'Administrator'.
+   Solusi  : Samakan nilai role di database/seeder agar cocok dengan controller.
+
+6. Error: 403 Forbidden pada Webhook Deploy
+   Penyebab: Nilai DEPLOY_SECRET dipanggil menggunakan env('DEPLOY_SECRET') saat konfigurasi
+             Laravel sudah di-cache (config:cache). Di Laravel, jika konfigurasi di-cache,
+             fungsi env() di luar folder /config/ akan mengembalikan nilai null.
+   Solusi  : Selalu daftarkan variabel rahasia di dalam 'config/app.php' (Bab 6) dan
+             panggil menggunakan config('app.deploy_secret').
+
+================================================================================
+                             SELAMAT MENCOBA!
+          Sekali setup berhasil, untuk update fitur selanjutnya
+         Anda cukup mengetik: git add . -> git commit -> git push!
+================================================================================
