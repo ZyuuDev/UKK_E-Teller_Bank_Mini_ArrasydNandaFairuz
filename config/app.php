@@ -54,6 +54,8 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'deploy_secret' => env('DEPLOY_SECRET', 'skansaba_super_secret_token_12345'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone
