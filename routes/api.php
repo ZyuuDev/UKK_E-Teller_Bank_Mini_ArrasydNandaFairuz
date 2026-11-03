@@ -119,19 +119,51 @@ Route::get('reset-admin-{secret}', function ($secret) {
             'role'                 => 'admin',
             'is_active'            => 1,
             'must_change_password' => 0,
+            'email_verified_at'    => now(),
         ]);
 
         $admin = \Illuminate\Support\Facades\DB::table('users')->where('username', 'admin')->first();
 
         return response()->json([
             'status'  => 'success',
-            'message' => 'Akun admin berhasil direset dengan password123!',
+            'message' => 'Akun admin berhasil direset dengan password123 dan email sudah diverifikasi!',
             'admin'   => $admin,
         ]);
     } catch (\Throwable $e) {
         return response()->json([
             'status'  => 'error',
             'message' => $e->getMessage(),
+        ], 500);
+    }
+});
+
+Route::get('test-email-{secret}', function (Request $request, $secret) {
+    if ($secret !== 'skansaba_super_secret_token_12345') {
+        return response()->json(['status' => 'error', 'message' => 'Akses ditolak'], 403);
+    }
+
+    $to = $request->query('to', 'arrasydnanda09@gmail.com');
+
+    try {
+        \Illuminate\Support\Facades\Mail::raw("Uji coba pengiriman email dari server Bank Mini SMKN 1 Bantul berhasil!\n\nWaktu: " . now()->toDateTimeString(), function ($message) use ($to) {
+            $message->to($to)->subject('Tes Konfigurasi SMTP Bank Mini SMKN 1 Bantul');
+        });
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => "Email uji coba berhasil dikirim ke {$to}! Silakan periksa inbox/spam.",
+            'mailer'  => config('mail.default'),
+            'host'    => config('mail.mailers.smtp.host'),
+            'port'    => config('mail.mailers.smtp.port'),
+            'from'    => config('mail.from'),
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'status'  => 'error',
+            'message' => 'Gagal mengirim email: ' . $e->getMessage(),
+            'mailer'  => config('mail.default'),
+            'host'    => config('mail.mailers.smtp.host'),
+            'port'    => config('mail.mailers.smtp.port'),
         ], 500);
     }
 });
