@@ -10,7 +10,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // 1. Administrator (role: admin)
-        User::updateOrCreate(
+        User::firstOrCreate(
             ['username' => 'admin'],
             [
                 'name'                 => 'Administrator Bank Mini',
@@ -18,11 +18,12 @@ class DatabaseSeeder extends Seeder
                 'role'                 => 'admin',
                 'is_active'            => true,
                 'must_change_password' => false,
+                'email_verified_at'    => now(),
             ]
         );
 
         // 2. Teller (role: teller)
-        User::updateOrCreate(
+        User::firstOrCreate(
             ['username' => 'teller01'],
             [
                 'name'                 => 'Teller Loket 1',
@@ -30,11 +31,12 @@ class DatabaseSeeder extends Seeder
                 'role'                 => 'teller',
                 'is_active'            => true,
                 'must_change_password' => false,
+                'email_verified_at'    => now(),
             ]
         );
 
         // 3. Supervisor (sebagai admin)
-        User::updateOrCreate(
+        User::firstOrCreate(
             ['username' => 'supervisor'],
             [
                 'name'                 => 'Supervisor Kepala',
@@ -42,6 +44,7 @@ class DatabaseSeeder extends Seeder
                 'role'                 => 'admin',
                 'is_active'            => true,
                 'must_change_password' => false,
+                'email_verified_at'    => now(),
             ]
         );
     }

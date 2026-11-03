@@ -39,27 +39,30 @@ Route::get('deploy-migrate-{secret}', function (Request $request, $secret) {
             $seedOutput = trim(Artisan::output());
         }
 
-        // Pastikan akun admin & teller selalu ada dan aktif
-        \App\Models\User::updateOrCreate(
-            ['username' => 'admin'],
-            [
+        // Buat akun admin & teller jika belum ada di database
+        if (!\App\Models\User::where('username', 'admin')->exists()) {
+            \App\Models\User::create([
+                'username'             => 'admin',
                 'name'                 => 'Administrator Bank Mini',
                 'password'             => 'password123',
                 'role'                 => 'admin',
                 'is_active'            => true,
                 'must_change_password' => false,
-            ]
-        );
-        \App\Models\User::updateOrCreate(
-            ['username' => 'teller01'],
-            [
+                'email_verified_at'    => now(),
+            ]);
+        }
+
+        if (!\App\Models\User::where('username', 'teller01')->exists()) {
+            \App\Models\User::create([
+                'username'             => 'teller01',
                 'name'                 => 'Teller Loket 1',
                 'password'             => 'password123',
                 'role'                 => 'teller',
                 'is_active'            => true,
                 'must_change_password' => false,
-            ]
-        );
+                'email_verified_at'    => now(),
+            ]);
+        }
 
         // Normalize roles jika sebelumnya tersimpan sebagai huruf kapital
         \Illuminate\Support\Facades\DB::table('users')->where('role', 'Administrator')->update(['role' => 'admin']);
@@ -106,16 +109,18 @@ Route::get('deploy-migrate-{secret}', function (Request $request, $secret) {
         ], 500);
     }
 });
-Route::get('reset-admin-{secret}', function ($secret) {
+Route::get('reset-admin-{secret}', function (Request $request, $secret) {
     if ($secret !== 'skansaba_super_secret_token_12345') {
         return response()->json(['status' => 'error', 'message' => 'Akses ditolak'], 403);
     }
+
+    $newPass = $request->query('password', 'password123');
 
     try {
         \Illuminate\Support\Facades\DB::table('personal_access_tokens')->where('tokenable_id', 1)->delete();
 
         \Illuminate\Support\Facades\DB::table('users')->where('username', 'admin')->update([
-            'password'             => \Illuminate\Support\Facades\Hash::make('password123'),
+            'password'             => \Illuminate\Support\Facades\Hash::make($newPass),
             'role'                 => 'admin',
             'is_active'            => 1,
             'must_change_password' => 0,
@@ -126,7 +131,7 @@ Route::get('reset-admin-{secret}', function ($secret) {
 
         return response()->json([
             'status'  => 'success',
-            'message' => 'Akun admin berhasil direset dengan password123 dan email sudah diverifikasi!',
+            'message' => 'Akun admin berhasil direset!',
             'admin'   => $admin,
         ]);
     } catch (\Throwable $e) {
