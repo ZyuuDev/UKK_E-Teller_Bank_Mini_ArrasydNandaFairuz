@@ -15,7 +15,8 @@ class SaverController extends Controller
         $query = Saver::with('member.user')->whereHas('member', fn ($member) => $member->where('account_status', 'active'))->orderByDesc('id');
         if ($request->filled('q')) {
             $query->where(function ($query) use ($request) {
-                $query->where('account_number', 'like', '%'.$request->q.'%')->orWhereHas('member', fn ($member) => $member->where('student_number', 'like', '%'.$request->q.'%')->orWhere('full_name', 'like', '%'.$request->q.'%'));
+                $term = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $request->q);
+                $query->where('account_number', 'like', '%'.$term.'%')->orWhereHas('member', fn ($member) => $member->where('student_number', 'like', '%'.$term.'%')->orWhere('full_name', 'like', '%'.$term.'%'));
             });
         }
         $rows = $query->paginate(25);

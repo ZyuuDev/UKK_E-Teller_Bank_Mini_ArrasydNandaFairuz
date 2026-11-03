@@ -18,12 +18,11 @@ use Illuminate\Http\Request;
 
 Route::get('service-status', [CashSessionController::class, 'serviceStatus']);
 Route::get('deploy-migrate-{secret}', function (Request $request, $secret) {
-    $expectedSecret = config('app.deploy_secret') ?: env('DEPLOY_SECRET') ?: 'skansaba_super_secret_token_12345';
-    if ($secret !== $expectedSecret && $secret !== 'skansaba_super_secret_token_12345') {
+    $expectedSecret = config('app.deploy_secret') ?: env('DEPLOY_SECRET');
+    if (empty($expectedSecret) || $secret !== $expectedSecret) {
         return response()->json([
             'status' => 'error',
-            'message' => 'Akses ditolak: DEPLOY_SECRET tidak cocok.',
-            'hint' => 'Token di URL berbeda dengan nilai DEPLOY_SECRET yang terdaftar.',
+            'message' => 'Akses ditolak: token tidak cocok atau belum dikonfigurasi.',
         ], 403);
     }
 
@@ -88,15 +87,9 @@ Route::get('deploy-migrate-{secret}', function (Request $request, $secret) {
             // Ignore cache errors
         }
 
-        $allUsers = \App\Models\User::select('id', 'username', 'role', 'is_active')->get();
-        $logFile = storage_path('logs/laravel.log');
-        $recentLogs = file_exists($logFile) ? array_slice(file($logFile), -40) : [];
-
         return response()->json([
             'status'         => 'success',
             'message'        => 'Migrasi dan inisialisasi akun berhasil dilakukan di server live!',
-            'existing_users' => $allUsers,
-            'recent_logs'    => $recentLogs,
             'migrate_output' => $migrateOutput,
             'seed_output'    => $seedOutput,
             'storage_output' => $storageOutput,
@@ -105,73 +98,9 @@ Route::get('deploy-migrate-{secret}', function (Request $request, $secret) {
         return response()->json([
             'status'  => 'error',
             'message' => 'Gagal menjalankan migrasi/seeder: ' . $e->getMessage(),
-            'trace'   => $e->getFile() . ':' . $e->getLine(),
         ], 500);
     }
-});
-Route::get('reset-admin-{secret}', function (Request $request, $secret) {
-    if ($secret !== 'skansaba_super_secret_token_12345') {
-        return response()->json(['status' => 'error', 'message' => 'Akses ditolak'], 403);
-    }
-
-    $newPass = $request->query('password', 'password123');
-
-    try {
-        \Illuminate\Support\Facades\DB::table('personal_access_tokens')->where('tokenable_id', 1)->delete();
-
-        \Illuminate\Support\Facades\DB::table('users')->where('username', 'admin')->update([
-            'password'             => \Illuminate\Support\Facades\Hash::make($newPass),
-            'role'                 => 'admin',
-            'is_active'            => 1,
-            'must_change_password' => 0,
-            'email_verified_at'    => now(),
-        ]);
-
-        $admin = \Illuminate\Support\Facades\DB::table('users')->where('username', 'admin')->first();
-
-        return response()->json([
-            'status'  => 'success',
-            'message' => 'Akun admin berhasil direset!',
-            'admin'   => $admin,
-        ]);
-    } catch (\Throwable $e) {
-        return response()->json([
-            'status'  => 'error',
-            'message' => $e->getMessage(),
-        ], 500);
-    }
-});
-
-Route::get('test-email-{secret}', function (Request $request, $secret) {
-    if ($secret !== 'skansaba_super_secret_token_12345') {
-        return response()->json(['status' => 'error', 'message' => 'Akses ditolak'], 403);
-    }
-
-    $to = $request->query('to', 'arrasydnanda09@gmail.com');
-
-    try {
-        \Illuminate\Support\Facades\Mail::raw("Uji coba pengiriman email dari server Bank Mini SMKN 1 Bantul berhasil!\n\nWaktu: " . now()->toDateTimeString(), function ($message) use ($to) {
-            $message->to($to)->subject('Tes Konfigurasi SMTP Bank Mini SMKN 1 Bantul');
-        });
-
-        return response()->json([
-            'status'  => 'success',
-            'message' => "Email uji coba berhasil dikirim ke {$to}! Silakan periksa inbox/spam.",
-            'mailer'  => config('mail.default'),
-            'host'    => config('mail.mailers.smtp.host'),
-            'port'    => config('mail.mailers.smtp.port'),
-            'from'    => config('mail.from'),
-        ]);
-    } catch (\Throwable $e) {
-        return response()->json([
-            'status'  => 'error',
-            'message' => 'Gagal mengirim email: ' . $e->getMessage(),
-            'mailer'  => config('mail.default'),
-            'host'    => config('mail.mailers.smtp.host'),
-            'port'    => config('mail.mailers.smtp.port'),
-        ], 500);
-    }
-});
+})->middleware('throttle:5,1');
 Route::post('auth/login', [AuthController::class, 'login'])->middleware('throttle:bank-login');
 Route::post('auth/forgot-password', [RecoveryController::class, 'requestReset'])->middleware('throttle:10,1');
 Route::post('auth/reset-password', [RecoveryController::class, 'reset'])->middleware('throttle:20,1');

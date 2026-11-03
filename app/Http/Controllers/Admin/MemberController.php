@@ -20,7 +20,8 @@ class MemberController extends Controller
         $query = Member::with('user:id,username,is_active')->orderBy('full_name');
         if ($request->filled('q')) {
             $query->where(function ($query) use ($request) {
-                $query->where('student_number', 'like', '%'.$request->q.'%')->orWhere('full_name', 'like', '%'.$request->q.'%');
+                $term = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $request->q);
+                $query->where('student_number', 'like', '%'.$term.'%')->orWhere('full_name', 'like', '%'.$term.'%');
             });
         }
         foreach (['graduation_year', 'account_status'] as $field) {
