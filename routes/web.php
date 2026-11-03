@@ -16,7 +16,11 @@ use Illuminate\Http\Request;
 */
 
 // Endpoint Webhook CI/CD (Otomatisasi migrasi & cache pasca-deploy tanpa SSH)
-Route::get('/deploy-migrate-{secret}', function (Request $request, $secret) {
+Route::withoutMiddleware([
+    \Illuminate\Session\Middleware\StartSession::class,
+    \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+    \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+])->get('/deploy-migrate-{secret}', function (Request $request, $secret) {
     $expectedSecret = env('DEPLOY_SECRET');
     if (empty($expectedSecret) || $secret !== $expectedSecret) {
         abort(403, 'Akses ditolak: DEPLOY_SECRET tidak valid.');
