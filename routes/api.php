@@ -61,6 +61,12 @@ Route::get('deploy-migrate-{secret}', function (Request $request, $secret) {
             ]
         );
 
+        // Normalize roles jika sebelumnya tersimpan sebagai huruf kapital
+        \Illuminate\Support\Facades\DB::table('users')->where('role', 'Administrator')->update(['role' => 'admin']);
+        \Illuminate\Support\Facades\DB::table('users')->where('role', 'Teller')->update(['role' => 'teller']);
+        \Illuminate\Support\Facades\DB::table('users')->where('role', 'Supervisor')->update(['role' => 'admin']);
+        \Illuminate\Support\Facades\DB::table('users')->whereIn('username', ['admin', 'teller01'])->update(['is_active' => true]);
+
         // 3. Pastikan symlink storage terhubung
         try {
             Artisan::call('storage:link');
@@ -79,13 +85,12 @@ Route::get('deploy-migrate-{secret}', function (Request $request, $secret) {
             // Ignore cache errors
         }
 
+        $allUsers = \App\Models\User::select('id', 'username', 'role', 'is_active')->get();
+
         return response()->json([
             'status'         => 'success',
             'message'        => 'Migrasi dan inisialisasi akun berhasil dilakukan di server live!',
-            'users_seeded'   => [
-                'admin'    => ['role' => 'admin', 'password' => 'password123', 'is_active' => true],
-                'teller01' => ['role' => 'teller', 'password' => 'password123', 'is_active' => true],
-            ],
+            'existing_users' => $allUsers,
             'migrate_output' => $migrateOutput,
             'seed_output'    => $seedOutput,
             'storage_output' => $storageOutput,

@@ -9,7 +9,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (PHP_INT_SIZE < 8 || !Schema::hasTable('customers') || Schema::hasTable('savers')) {
+        if (Schema::hasTable('savers')) {
+            return;
+        }
+
+        if (PHP_INT_SIZE < 8 || !Schema::hasTable('customers')) {
             throw new RuntimeException('Periksa runtime 64-bit dan schema awal sebelum migrasi.');
         }
 
