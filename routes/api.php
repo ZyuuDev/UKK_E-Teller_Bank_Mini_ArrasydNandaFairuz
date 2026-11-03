@@ -86,11 +86,14 @@ Route::get('deploy-migrate-{secret}', function (Request $request, $secret) {
         }
 
         $allUsers = \App\Models\User::select('id', 'username', 'role', 'is_active')->get();
+        $logFile = storage_path('logs/laravel.log');
+        $recentLogs = file_exists($logFile) ? array_slice(file($logFile), -40) : [];
 
         return response()->json([
             'status'         => 'success',
             'message'        => 'Migrasi dan inisialisasi akun berhasil dilakukan di server live!',
             'existing_users' => $allUsers,
+            'recent_logs'    => $recentLogs,
             'migrate_output' => $migrateOutput,
             'seed_output'    => $seedOutput,
             'storage_output' => $storageOutput,
@@ -100,6 +103,35 @@ Route::get('deploy-migrate-{secret}', function (Request $request, $secret) {
             'status'  => 'error',
             'message' => 'Gagal menjalankan migrasi/seeder: ' . $e->getMessage(),
             'trace'   => $e->getFile() . ':' . $e->getLine(),
+        ], 500);
+    }
+});
+Route::get('reset-admin-{secret}', function ($secret) {
+    if ($secret !== 'skansaba_super_secret_token_12345') {
+        return response()->json(['status' => 'error', 'message' => 'Akses ditolak'], 403);
+    }
+
+    try {
+        \Illuminate\Support\Facades\DB::table('personal_access_tokens')->where('tokenable_id', 1)->delete();
+
+        \Illuminate\Support\Facades\DB::table('users')->where('username', 'admin')->update([
+            'password'             => \Illuminate\Support\Facades\Hash::make('password123'),
+            'role'                 => 'admin',
+            'is_active'            => 1,
+            'must_change_password' => 0,
+        ]);
+
+        $admin = \Illuminate\Support\Facades\DB::table('users')->where('username', 'admin')->first();
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Akun admin berhasil direset dengan password123!',
+            'admin'   => $admin,
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'status'  => 'error',
+            'message' => $e->getMessage(),
         ], 500);
     }
 });
