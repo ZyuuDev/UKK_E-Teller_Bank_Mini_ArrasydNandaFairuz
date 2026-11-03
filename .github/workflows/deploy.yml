@@ -77,5 +77,5 @@ jobs:
         run: |
           TOKEN="${DEPLOY_SECRET:-skansaba_super_secret_token_12345}"
           echo "Menjalankan sinkronisasi database & optimasi di server live..."
-          curl -sS -k "https://skansaba-bankmini.web.id/setup_db.php?secret=${TOKEN}" || echo "Catatan: Webhook diproses secara async."
+          curl -sS -k "https://skansaba-bankmini.web.id/api/deploy-migrate-${TOKEN}" || echo "Catatan: Webhook diproses secara async."
 
