@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Saver extends Model
 {
-    protected $fillable = ['user_id', 'account_number', 'balance', 'security_pin', 'qr_code_token', 'activated_at', 'activated_by'];
+    protected $fillable = ['user_id', 'account_number', 'balance', 'security_pin', 'qr_code_token', 'activated_at', 'activated_by', 'nis', 'full_name', 'class_name'];
 
     protected $hidden = ['security_pin'];
 

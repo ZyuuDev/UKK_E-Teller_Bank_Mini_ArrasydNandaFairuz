@@ -109,6 +109,15 @@ class BankingService
                 'activated_at' => now(),
                 'activated_by' => $tellerId,
             ];
+            if (Schema::hasColumn('savers', 'nis')) {
+                $data['nis'] = $member->student_number;
+            }
+            if (Schema::hasColumn('savers', 'full_name')) {
+                $data['full_name'] = $member->full_name;
+            }
+            if (Schema::hasColumn('savers', 'class_name')) {
+                $data['class_name'] = $member->major ?? '-';
+            }
             if ($reserved) {
                 $reserved->update($data);
                 $saver = $reserved;

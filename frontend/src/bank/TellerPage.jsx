@@ -179,6 +179,12 @@ function useTellerWorkflow(tellerId, onChange, canCreate) {
     setRejected(false)
     setError('')
   }
+  function clearPending() {
+    remember(null)
+    setReview(null)
+    setRejected(false)
+    setError('')
+  }
   return {
     pending,
     query,
@@ -202,6 +208,7 @@ function useTellerWorkflow(tellerId, onChange, canCreate) {
     prepare,
     submit,
     correctRejected,
+    clearPending,
   }
 }
 
@@ -274,6 +281,13 @@ function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
           <div className="bank-actions">
             <Button variant="secondary" busy={tx.busy} onClick={tx.resolve}>
               Periksa hasil
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={tx.busy}
+              onClick={tx.clearPending}
+            >
+              Reset transaksi tertunda
             </Button>
             {tx.rejected && (
               <Button
