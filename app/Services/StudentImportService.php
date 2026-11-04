@@ -162,7 +162,7 @@ class StudentImportService
             abort_if((int) $import->processed_rows === 0 && now()->greaterThan($import->expires_at), 422, 'Pratinjau kedaluwarsa. Unggah ulang file.');
             $rows = json_decode($import->rows, true, flags: JSON_THROW_ON_ERROR);
             $result = $import->result ? json_decode($import->result, true, flags: JSON_THROW_ON_ERROR) : ['created' => 0, 'skipped' => 0, 'invalid' => 0];
-            $chunk = array_slice($rows, (int) $import->processed_rows, 25);
+            $chunk = array_slice($rows, (int) $import->processed_rows, 100);
             foreach ($chunk as $row) {
                 if ($row['status'] === 'invalid') {
                     $result['invalid']++;

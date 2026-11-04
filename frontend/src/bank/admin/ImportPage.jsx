@@ -46,6 +46,9 @@ export default function ImportPage() {
           await api(`/admin/member-imports/${preview.id}/commit`, { method: 'POST' })
         ).data
         setProgress(result)
+        if (!result.complete) {
+          await new Promise((resolve) => setTimeout(resolve, 200))
+        }
       } while (!result.complete)
     } catch (failure) {
       const previewExpired =

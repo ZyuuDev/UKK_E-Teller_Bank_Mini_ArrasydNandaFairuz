@@ -26,3 +26,4 @@ return new class extends Migration
         // Kolom legacy sengaja dilepas karena identitas siswa tersimpan di tabel members.
     }
 };
+
