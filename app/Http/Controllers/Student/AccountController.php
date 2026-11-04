@@ -14,7 +14,7 @@ class AccountController extends Controller
         $member = $request->user()->member()->with('saver')->firstOrFail();
         return response()->json([
             'data' => [
-                'member' => $member->only(['user_id', 'student_number', 'full_name', 'graduation_year', 'account_status']),
+                'member' => $member->only(['user_id', 'student_number', 'full_name', 'graduation_year', 'major', 'account_status']),
                 'saver' => $member->account_status === 'active' ? $member->saver?->profile() : null,
                 'service_status' => Pengaturan::getStatusLayanan(),
             ],

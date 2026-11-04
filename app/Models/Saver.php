@@ -37,6 +37,7 @@ class Saver extends Model
             'student_number' => $this->member->student_number,
             'full_name' => $this->member->full_name,
             'graduation_year' => $this->member->graduation_year,
+            'major' => $this->member->major,
             'account_number' => $this->account_number,
             'account_status' => $this->member->account_status,
             'balance' => $this->balance,

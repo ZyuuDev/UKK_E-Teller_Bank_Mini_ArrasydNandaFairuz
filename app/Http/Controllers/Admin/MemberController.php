@@ -16,7 +16,7 @@ class MemberController extends Controller
 
     public function index(Request $request)
     {
-        $request->validate(['q' => 'nullable|string|max:100', 'graduation_year' => 'nullable|integer', 'account_status' => 'nullable|in:active,inactive']);
+        $request->validate(['q' => 'nullable|string|max:100', 'graduation_year' => 'nullable|integer', 'major' => 'nullable|string|max:20', 'account_status' => 'nullable|in:active,inactive']);
         $query = Member::with('user:id,username,is_active')->orderBy('full_name');
         if ($request->filled('q')) {
             $query->where(function ($query) use ($request) {
@@ -24,7 +24,7 @@ class MemberController extends Controller
                 $query->where('student_number', 'like', '%'.$term.'%')->orWhere('full_name', 'like', '%'.$term.'%');
             });
         }
-        foreach (['graduation_year', 'account_status'] as $field) {
+        foreach (['graduation_year', 'major', 'account_status'] as $field) {
             if ($request->filled($field)) {
                 $query->where($field, $request->input($field));
             }
@@ -38,6 +38,7 @@ class MemberController extends Controller
             'student_number' => ['required', 'string', 'regex:/^[0-9]{1,20}$/', 'unique:members,student_number'],
             'full_name' => 'required|string|max:100',
             'graduation_year' => 'required|integer|between:2000,2200',
+            'major' => 'nullable|string|max:20',
         ]);
         return response()->json(['data' => $this->members->create($data, $request->user()->id)], 201);
     }
@@ -48,6 +49,7 @@ class MemberController extends Controller
             'student_number' => ['required', 'string', 'regex:/^[0-9]{1,20}$/', Rule::unique('members', 'student_number')->ignore($member->user_id, 'user_id')],
             'full_name' => 'required|string|max:100',
             'graduation_year' => 'required|integer|between:2000,2200',
+            'major' => 'nullable|string|max:20',
         ]);
         return response()->json(['data' => $this->members->update($member, $data, $request->user()->id)]);
     }

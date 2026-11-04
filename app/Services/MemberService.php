@@ -35,6 +35,7 @@ class MemberService
                 'student_number' => $data['student_number'],
                 'full_name' => $data['full_name'],
                 'graduation_year' => $data['graduation_year'],
+                'major' => $data['major'] ?? null,
                 'account_status' => 'inactive',
             ]);
             $this->audit->record($actorId, 'member.created', 'member', $member->user_id);
@@ -46,7 +47,7 @@ class MemberService
     {
         return DB::transaction(function () use ($member, $data, $actorId) {
             $member = Member::whereKey($member->user_id)->lockForUpdate()->firstOrFail();
-            $before = $member->only(['student_number', 'full_name', 'graduation_year']);
+            $before = $member->only(['student_number', 'full_name', 'graduation_year', 'major']);
             $member->update($data);
             $member->user->update(['name' => $member->full_name]);
             $this->audit->record($actorId, 'member.updated', 'member', $member->user_id, ['before' => $before, 'after' => $member->only(array_keys($before))]);

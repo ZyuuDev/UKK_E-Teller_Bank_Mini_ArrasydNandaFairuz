@@ -71,8 +71,8 @@ class StudentImportService
                 $this->fail('Gunakan XLSX asli atau CSV.');
             }
             $info = $reader->listWorksheetInfo($file->getRealPath());
-            if (!$info || $info[0]['totalRows'] > $limit + 1 || $info[0]['totalColumns'] > 3) {
-                $this->fail('Worksheet pertama harus mempunyai tiga kolom dan tidak melebihi batas baris.');
+            if (!$info || $info[0]['totalRows'] > $limit + 1 || $info[0]['totalColumns'] > 4) {
+                $this->fail('Worksheet pertama harus mempunyai 3 atau 4 kolom dan tidak melebihi batas baris.');
             }
             $reader->setLoadSheetsOnly($info[0]['worksheetName']);
             $reader->setReadEmptyCells(false);
@@ -81,7 +81,8 @@ class StudentImportService
                 $sheet = $book->getSheet(0);
                 for ($row = 1; $row <= $info[0]['totalRows']; $row++) {
                     $values = [];
-                    foreach (['A', 'B', 'C'] as $column) {
+                    $columns = $info[0]['totalColumns'] >= 4 ? ['A', 'B', 'C', 'D'] : ['A', 'B', 'C'];
+                    foreach ($columns as $column) {
                         $cell = $sheet->getCell($column.$row);
                         if ($cell->getDataType() === DataType::TYPE_FORMULA) {
                             $this->fail('Hapus formula pada baris '.$row.'.');
@@ -99,8 +100,9 @@ class StudentImportService
             $this->fail('File kosong.');
         }
         $rows[0][0] = preg_replace('/^\xEF\xBB\xBF/', '', $rows[0][0] ?? '');
-        if (array_map('strtolower', $rows[0]) !== ['student_number', 'full_name', 'graduation_year']) {
-            $this->fail('Header harus student_number, full_name, graduation_year dalam urutan tersebut.');
+        $header = array_map('strtolower', $rows[0]);
+        if ($header !== ['student_number', 'full_name', 'graduation_year'] && $header !== ['student_number', 'full_name', 'graduation_year', 'major']) {
+            $this->fail('Header harus student_number, full_name, graduation_year (dan opsional major) dalam urutan tersebut.');
         }
         return array_slice($rows, 1);
     }
@@ -118,15 +120,16 @@ class StudentImportService
             if (!mb_check_encoding(implode('', $values), 'UTF-8')) {
                 $this->fail('Gunakan file CSV dengan encoding UTF-8.');
             }
-            $data = ['student_number' => $values[0] ?? '', 'full_name' => $values[1] ?? '', 'graduation_year' => $values[2] ?? ''];
+            $data = ['student_number' => $values[0] ?? '', 'full_name' => $values[1] ?? '', 'graduation_year' => $values[2] ?? '', 'major' => !empty($values[3]) ? $values[3] : null];
             $validator = Validator::make($data, [
                 'student_number' => ['required', 'string', 'regex:/^[0-9]{1,20}$/'],
                 'full_name' => ['required', 'string', 'max:100', 'not_regex:/^[=+@-]/u'],
                 'graduation_year' => 'required|integer|between:2000,2200',
+                'major' => 'nullable|string|max:20',
             ]);
             $errors = $validator->errors()->all();
-            if (count($values) !== 3) {
-                $errors[] = 'Gunakan tiga kolom.';
+            if (count($values) !== 3 && count($values) !== 4) {
+                $errors[] = 'Gunakan 3 atau 4 kolom.';
             }
             $duplicate = isset($seen[$data['student_number']]) || isset($existingMembers[$data['student_number']]);
             if (isset($existingUsernames['s'.$data['student_number']]) && !$duplicate) {

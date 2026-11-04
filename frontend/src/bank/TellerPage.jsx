@@ -323,6 +323,11 @@ function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
                   <DetailRow label="Nomor siswa">
                     {tx.found.member.student_number}
                   </DetailRow>
+                  {tx.found.member.major && (
+                    <DetailRow label="Jurusan">
+                      {tx.found.member.major}
+                    </DetailRow>
+                  )}
                   <DetailRow label="Tahun lulus">
                     {tx.found.member.graduation_year}
                   </DetailRow>

@@ -21,7 +21,7 @@ class TransactionController extends Controller
         abort_unless($member, 404, 'Anggota tidak ditemukan. Gunakan nomor siswa, nomor rekening, atau QR.');
         $saver = $saver ?? $member->saver;
         return response()->json(['data' => [
-            'member' => $member->only(['user_id', 'student_number', 'full_name', 'graduation_year', 'account_status']),
+            'member' => $member->only(['user_id', 'student_number', 'full_name', 'graduation_year', 'major', 'account_status']),
             'saver' => $member->account_status === 'active' ? $saver?->profile() : null,
         ]]);
     }

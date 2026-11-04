@@ -116,7 +116,7 @@ export default function ImportPage() {
           <form className="bank-form admin-upload" onSubmit={upload}>
             <FormField
               label="Pilih file CSV atau XLSX"
-              hint="Kolom: student_number, full_name, graduation_year."
+              hint="Kolom: student_number, full_name, graduation_year, major (opsional)."
             >
               <Input
                 name="file"
@@ -164,6 +164,7 @@ export default function ImportPage() {
               ['row', 'Baris'],
               ['student_number', 'Nomor siswa'],
               ['full_name', 'Nama'],
+              ['major', 'Jurusan', null, (row) => row.major || '-'],
               ['graduation_year', 'Tahun lulus'],
               ['status', 'Hasil', 'status'],
               ['errors', 'Detail kesalahan'],

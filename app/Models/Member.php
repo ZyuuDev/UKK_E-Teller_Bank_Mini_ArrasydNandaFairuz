@@ -8,7 +8,7 @@ class Member extends Model
 {
     protected $primaryKey = 'user_id';
     public $incrementing = false;
-    protected $fillable = ['user_id', 'student_number', 'full_name', 'graduation_year', 'account_status'];
+    protected $fillable = ['user_id', 'student_number', 'full_name', 'graduation_year', 'major', 'account_status'];
 
     protected function casts(): array
     {

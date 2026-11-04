@@ -24,7 +24,7 @@ class StudentImportController extends Controller
         return response()->streamDownload(function () {
             $stream = fopen('php://output', 'w');
             fwrite($stream, "\xEF\xBB\xBF");
-            fputcsv($stream, ['student_number', 'full_name', 'graduation_year'], ',', '"', '');
+            fputcsv($stream, ['student_number', 'full_name', 'graduation_year', 'major'], ',', '"', '');
             fclose($stream);
         }, 'student-import-template.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }

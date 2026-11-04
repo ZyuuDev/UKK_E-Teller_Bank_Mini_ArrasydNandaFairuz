@@ -159,4 +159,28 @@ class SchoolBankRevisionTest extends TestCase
         $this->assertTrue(Hash::check('NewTestingPassword123!', $user->fresh()->password));
         $this->assertSame(0, $user->tokens()->count());
     }
+
+    public function test_import_with_major_and_major_filter_and_search(): void
+    {
+        $file = UploadedFile::fake()->createWithContent('students_with_major.csv', "student_number,full_name,graduation_year,major\n009001,Siswa RPL,2029,RPL\n009002,Siswa TKJ,2028,TKJ\n");
+        $preview = app(StudentImportService::class)->preview($file, $this->admin->id);
+        $this->assertSame('RPL', $preview['rows'][0]['data']['major']);
+        $this->assertSame('TKJ', $preview['rows'][1]['data']['major']);
+        $result = app(StudentImportService::class)->commit($preview['id'], $this->admin->id);
+        $this->assertSame(2, $result['created']);
+
+        $rplStudent = Member::where('student_number', '009001')->firstOrFail();
+        $this->assertSame('RPL', $rplStudent->major);
+
+        Sanctum::actingAs($this->admin);
+        $response = $this->getJson('/api/admin/members?major=RPL');
+        $response->assertOk();
+        $this->assertTrue(collect($response->json('data.data'))->contains('student_number', '009001'));
+        $this->assertFalse(collect($response->json('data.data'))->contains('student_number', '009002'));
+
+        Sanctum::actingAs($this->teller);
+        $searchResponse = $this->getJson('/api/teller/search?q=009001');
+        $searchResponse->assertOk();
+        $this->assertSame('RPL', $searchResponse->json('data.member.major'));
+    }
 }

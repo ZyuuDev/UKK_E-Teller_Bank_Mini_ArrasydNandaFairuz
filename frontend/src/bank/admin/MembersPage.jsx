@@ -19,7 +19,7 @@ import {
   Status,
 } from '../ui'
 
-const emptyFilter = { q: '', graduation_year: '', account_status: '' }
+const emptyFilter = { q: '', graduation_year: '', major: '', account_status: '' }
 
 export default function MembersPage() {
   const [draft, setDraft] = useState(emptyFilter)
@@ -153,6 +153,24 @@ export default function MembersPage() {
               }
             />
           </FormField>
+          <FormField label="Jurusan">
+            <Select
+              value={draft.major}
+              onChange={(event) =>
+                setDraft({ ...draft, major: event.target.value })
+              }
+            >
+              <option value="">Semua jurusan</option>
+              <option value="RPL">RPL (Rekayasa Perangkat Lunak)</option>
+              <option value="TKJ">TKJ (Teknik Komputer & Jaringan)</option>
+              <option value="DKV">DKV (Desain Komunikasi Visual)</option>
+              <option value="AK">AK (Akuntansi)</option>
+              <option value="LPS">LPS (Layanan Perbankan Syariah)</option>
+              <option value="MP">MP (Manajemen Perkantoran)</option>
+              <option value="BR">BR (Bisnis Retail)</option>
+              <option value="BD">BD (Bisnis Digital)</option>
+            </Select>
+          </FormField>
           <FormField label="Status rekening">
             <Select
               value={draft.account_status}
@@ -195,6 +213,7 @@ export default function MembersPage() {
             columns={[
               ['student_number', 'Nomor siswa'],
               ['full_name', 'Nama siswa'],
+              ['major', 'Jurusan', null, (row) => row.major || '-'],
               ['graduation_year', 'Tahun lulus'],
               ['account_status', 'Rekening', 'status'],
               [
@@ -288,6 +307,22 @@ export default function MembersPage() {
                 required
               />
             </FormField>
+            <FormField label="Jurusan">
+              <Select
+                name="major"
+                defaultValue={editor.row?.major || ''}
+              >
+                <option value="">Pilih jurusan (opsional)</option>
+                <option value="RPL">RPL (Rekayasa Perangkat Lunak)</option>
+                <option value="TKJ">TKJ (Teknik Komputer & Jaringan)</option>
+                <option value="DKV">DKV (Desain Komunikasi Visual)</option>
+                <option value="AK">AK (Akuntansi)</option>
+                <option value="LPS">LPS (Layanan Perbankan Syariah)</option>
+                <option value="MP">MP (Manajemen Perkantoran)</option>
+                <option value="BR">BR (Bisnis Retail)</option>
+                <option value="BD">BD (Bisnis Digital)</option>
+              </Select>
+            </FormField>
             <div className="bank-actions bank-actions--end">
               <Button variant="secondary" disabled={busy} onClick={() => setEditor(null)}>
                 Batal
@@ -306,6 +341,7 @@ export default function MembersPage() {
             <dl className="bank-detail-list">
               <DetailRow label="Nomor siswa">{detail.student_number}</DetailRow>
               <DetailRow label="Tahun lulus">{detail.graduation_year}</DetailRow>
+              <DetailRow label="Jurusan">{detail.major || '-'}</DetailRow>
               <DetailRow label="Status rekening">
                 <Status value={detail.account_status} />
               </DetailRow>
