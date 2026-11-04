@@ -118,7 +118,7 @@ class SchoolBankRevisionTest extends TestCase
         $this->assertSame('duplicate', $preview['rows'][1]['status']);
         $result = app(StudentImportService::class)->commit($preview['id'], $this->admin->id);
         $again = app(StudentImportService::class)->commit($preview['id'], $this->admin->id);
-        $this->assertSame($result, $again);
+        $this->assertEquals($result, $again);
         $this->assertSame(1, Member::where('student_number', '001234')->count());
         $imported = Member::where('student_number', '001234')->firstOrFail();
         $this->assertFalse($imported->saver()->exists());

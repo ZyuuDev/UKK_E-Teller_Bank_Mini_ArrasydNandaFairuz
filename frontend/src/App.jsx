@@ -24,6 +24,7 @@ import {
 import TellerPage from './bank/TellerPage'
 import AppShell from './bank/layout/AppShell'
 import AccountSettingsPage from './bank/AccountSettingsPage'
+import LandingPage from './bank/LandingPage'
 import './bank/teacher-revisions.css'
 import { Button, Drawer, Notice, PageHeader } from './bank/ui'
 import './bank/redesign.css'
@@ -87,6 +88,22 @@ export default function App() {
   const [page, setPage] = useState('overview')
   const [loading, setLoading] = useState(!!getToken())
   const [error, setError] = useState('')
+  const [view, setView] = useState(() =>
+    window.location.hash === '#login' || window.location.pathname === '/login'
+      ? 'login'
+      : 'landing'
+  )
+  useEffect(() => {
+    const onHash = () => {
+      if (window.location.hash === '#login') {
+        setView('login')
+      } else if (window.location.hash === '' || window.location.hash === '#beranda') {
+        setView('landing')
+      }
+    }
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [])
   useEffect(() => {
     let active = true
     if (getToken())
@@ -120,6 +137,10 @@ export default function App() {
       setToken(null)
       setUser(null)
       setAccountOpen(false)
+      setView('landing')
+      if (window.location.hash === '#login') {
+        window.location.hash = ''
+      }
     }
   }
   if (loading)
@@ -128,20 +149,38 @@ export default function App() {
         <p role="status">Memeriksa sesi...</p>
       </main>
     )
-  if (!user)
+  if (!user) {
+    if (view === 'login') {
+      return (
+        <>
+          <Notice error>{error}</Notice>
+          <LoginPage
+            onBack={() => {
+              setView('landing')
+              setError('')
+              if (window.location.hash === '#login') {
+                window.location.hash = ''
+              }
+            }}
+            onAuth={(value) => {
+              setAccountOpen(false)
+              setUser(value)
+              setError('')
+              setPage('overview')
+            }}
+          />
+        </>
+      )
+    }
     return (
-      <>
-        <Notice error>{error}</Notice>
-        <LoginPage
-          onAuth={(value) => {
-            setAccountOpen(false)
-            setUser(value)
-            setError('')
-            setPage('overview')
-          }}
-        />
-      </>
+      <LandingPage
+        onOpenLogin={() => {
+          setView('login')
+          window.location.hash = 'login'
+        }}
+      />
     )
+  }
   if (user.must_change_password) return <PasswordPage onAuth={setUser} />
   if (!['admin', 'teller'].includes(user.role))
     return (

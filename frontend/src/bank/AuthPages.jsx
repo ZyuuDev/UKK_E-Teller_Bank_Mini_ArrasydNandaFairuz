@@ -3,7 +3,7 @@ import { api, setToken } from './api'
 import { Button, FormField, Input, Notice } from './ui'
 import AuthLayout from './layout/AuthLayout'
 
-export function LoginPage({ onAuth }) {
+export function LoginPage({ onAuth, onBack }) {
   const [recovery, setRecovery] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -71,6 +71,11 @@ export function LoginPage({ onAuth }) {
         </Button>
       </form>
       <div className="bank-auth__links">
+        {onBack && (
+          <Button variant="secondary" disabled={busy} onClick={onBack}>
+            ← Kembali ke Halaman Utama
+          </Button>
+        )}
         <Button variant="secondary" disabled={busy} onClick={() => setRecovery(true)}>
           Lupa password?
         </Button>
@@ -258,6 +263,11 @@ export function RecoveryPage({ onBack }) {
         </form>
       )}
       <div className="bank-auth__links">
+        {onBack && (
+          <Button variant="secondary" disabled={busy} onClick={onBack}>
+            ← Kembali ke Halaman Utama
+          </Button>
+        )}
         {phase === 'code' && (
           <Button
             variant="secondary"

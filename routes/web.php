@@ -21,14 +21,13 @@ Route::withoutMiddleware([
     \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
 ])->group(function () {
     Route::get('/debug-test', function () {
+        abort_unless(config('app.debug'), 404);
+
         return response()->json([
             'status' => 'ok',
             'php' => PHP_VERSION,
             'app_key_set' => !empty(config('app.key')),
             'db_connection' => config('database.default'),
-            'db_host' => config('database.connections.mysql.host'),
-            'db_database' => config('database.connections.mysql.database'),
-            'db_username' => config('database.connections.mysql.username'),
             'deploy_secret_set' => !empty(env('DEPLOY_SECRET')),
             'session_driver' => config('session.driver'),
         ]);
