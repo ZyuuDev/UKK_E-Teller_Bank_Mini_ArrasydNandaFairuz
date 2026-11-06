@@ -26,18 +26,6 @@ Route::get('deploy-migrate-{secret}', function (Request $request, $secret) {
         ], 403);
     }
 
-    if ($request->has('diag')) {
-        $logFile = storage_path('logs/laravel.log');
-        $logLines = file_exists($logFile) ? array_slice(file($logFile), -100) : ['Log file not found'];
-        $tables = array_map('current', json_decode(json_encode(\Illuminate\Support\Facades\DB::select('SHOW TABLES')), true));
-        $saversColumns = \Illuminate\Support\Facades\Schema::getColumnListing('savers');
-        return response()->json([
-            'tables' => $tables,
-            'savers_columns' => $saversColumns,
-            'log' => implode('', $logLines),
-        ]);
-    }
-
     try {
         // 1. Jalankan migrasi database
         Artisan::call('migrate', ['--force' => true]);
