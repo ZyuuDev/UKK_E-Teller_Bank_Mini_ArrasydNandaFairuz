@@ -49,7 +49,7 @@ class MemberService
             $member = Member::whereKey($member->user_id)->lockForUpdate()->firstOrFail();
             $before = $member->only(['student_number', 'full_name', 'graduation_year', 'major']);
             $member->update($data);
-            $member->user->update(['name' => $member->full_name]);
+            $member->user?->update(['name' => $member->full_name]);
             $this->audit->record($actorId, 'member.updated', 'member', $member->user_id, ['before' => $before, 'after' => $member->only(array_keys($before))]);
             return $member->load('user:id,username,is_active');
         });

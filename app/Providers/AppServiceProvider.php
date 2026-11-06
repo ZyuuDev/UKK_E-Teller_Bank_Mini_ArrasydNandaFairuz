@@ -15,12 +15,11 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Batas kasar anti-banjir permintaan per IP. Penguncian percobaan gagal ada di AuthController.
         RateLimiter::for('bank-login', function (Request $request) {
-            $identity = strtolower(trim((string) $request->input('username'))).':'.$request->ip();
-            return [
-                Limit::perMinute(60)->by('bank-login-ip:'.$request->ip()),
-                Limit::perMinute(5)->by('bank-login-account:'.hash_hmac('sha256', $identity, config('app.key'))),
-            ];
+            return Limit::perMinute(30)->by('bank-login-ip:'.$request->ip())->response(function (Request $request, array $headers) {
+                return response()->json(['message' => 'Terlalu banyak permintaan login. Coba lagi sebentar lagi.', 'code' => 'too_many_attempts'], 429, $headers);
+            });
         });
     }
 }

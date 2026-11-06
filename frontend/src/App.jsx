@@ -26,7 +26,8 @@ import AppShell from './bank/layout/AppShell'
 import AccountSettingsPage from './bank/AccountSettingsPage'
 import LandingPage from './bank/LandingPage'
 import './bank/teacher-revisions.css'
-import { Button, Drawer, Notice, PageHeader } from './bank/ui'
+import { Button, Drawer, Modal, Notice, PageHeader } from './bank/ui'
+import { useIdleTimeout } from './bank/useIdleTimeout'
 import './bank/redesign.css'
 
 const pages = {
@@ -118,6 +119,8 @@ export default function App() {
           if (active) setLoading(false)
         })
     const expired = () => {
+      setError('Sesi berakhir. Silakan masuk kembali.')
+      setView('login')
       setToken(null)
       setUser(null)
       setAccountOpen(false)
@@ -143,6 +146,45 @@ export default function App() {
       }
     }
   }
+  async function idleLogout() {
+    try {
+      await api('/auth/logout', { method: 'POST' })
+    } catch {
+      // Token lokal tetap dihapus walau server tidak dapat dihubungi.
+    }
+    setToken(null)
+    setUser(null)
+    setAccountOpen(false)
+    setView('login')
+    window.location.hash = 'login'
+    setError('Sesi berakhir karena tidak ada aktivitas. Silakan masuk kembali.')
+  }
+  const serverIdle = user?.idle_timeout_seconds ?? 600
+  const idle = useIdleTimeout({
+    enabled: !!user,
+    idleSeconds: Math.max(serverIdle - 60, 60),
+    warnSeconds: 60,
+    onTimeout: idleLogout,
+  })
+  const idleWarning = (
+    <Modal
+      open={!!user && idle.remaining !== null}
+      title="Sesi hampir berakhir"
+      onClose={idle.stay}
+    >
+      <p>
+        Tidak ada aktivitas. Demi keamanan, Anda akan keluar otomatis dalam{' '}
+        <strong>{idle.remaining ?? 0} detik</strong>.
+      </p>
+      <div className="bank-actions bank-actions--end">
+        <Button variant="secondary" onClick={idleLogout}>
+          Keluar sekarang
+        </Button>
+        <Button onClick={idle.stay}>Tetap masuk</Button>
+      </div>
+    </Modal>
+  )
+
   if (loading)
     return (
       <main className="login-page">
@@ -181,7 +223,13 @@ export default function App() {
       />
     )
   }
-  if (user.must_change_password) return <PasswordPage onAuth={setUser} />
+  if (user.must_change_password)
+    return (
+      <>
+        <PasswordPage onAuth={setUser} />
+        {idleWarning}
+      </>
+    )
   if (!['admin', 'teller'].includes(user.role))
     return (
       <main className="login-page">
@@ -239,6 +287,7 @@ export default function App() {
           onBusyChange={setAccountBusy}
         />
       </Drawer>
+      {idleWarning}
     </AppShell>
   )
 }

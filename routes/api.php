@@ -108,7 +108,7 @@ Route::post('auth/reset-password', [RecoveryController::class, 'reset'])->middle
 Route::post('auth/forgot-pin', [PinRecoveryController::class, 'requestReset'])->middleware('throttle:10,1');
 Route::post('auth/reset-pin', [PinRecoveryController::class, 'reset'])->middleware('throttle:20,1');
 
-Route::middleware(['auth:sanctum', 'account'])->group(function () {
+Route::middleware(['idle', 'auth:sanctum', 'account'])->group(function () {
     Route::get('auth/me', [AuthController::class, 'me']);
     Route::post('auth/logout', [AuthController::class, 'logout']);
     Route::post('auth/password', [AuthController::class, 'password'])->middleware('throttle:5,1');

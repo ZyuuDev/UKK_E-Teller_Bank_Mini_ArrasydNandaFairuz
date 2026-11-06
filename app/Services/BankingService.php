@@ -97,7 +97,7 @@ class BankingService
             if (!$member->graduation_year) {
                 $this->reject('member', 'Minta admin melengkapi tahun kelulusan terlebih dahulu.');
             }
-            if (!$member->user->is_active || $member->account_status !== 'inactive' || ($reserved && ($reserved->balance !== 0 || $reserved->transactions()->exists()))) {
+            if (!$member->user || !$member->user->is_active || $member->account_status !== 'inactive' || ($reserved && ($reserved->balance !== 0 || $reserved->transactions()->exists()))) {
                 $this->reject('member', 'Anggota tidak dapat diaktifkan atau sudah memiliki rekening.');
             }
             $data = [
@@ -143,7 +143,7 @@ class BankingService
                 return $previous;
             }
             $this->ensureOpen($session);
-            if (!$saver->member->user->is_active || $saver->member->account_status !== 'active') {
+            if (!$saver->member || !$saver->member->user || !$saver->member->user->is_active || $saver->member->account_status !== 'active') {
                 $this->reject('account_number', 'Layanan rekening sedang tidak aktif.');
             }
             if ($type === 'Withdrawal') {
@@ -185,12 +185,12 @@ class BankingService
             'notes' => $notes,
             'balance_after' => $balance,
             'snapshot_account_number' => $saver->account_number,
-            'snapshot_member_name' => $saver->member->full_name,
+            'snapshot_member_name' => $saver->member?->full_name ?? ($saver->full_name ?? 'Nasabah'),
         ]);
         $debit = $type === 'Deposit' ? '101' : '201';
         $credit = $type === 'Deposit' ? '201' : '101';
         foreach ([['account_code' => $debit, 'entry_type' => 'Debit'], ['account_code' => $credit, 'entry_type' => 'Credit']] as $entry) {
-            DB::table('journal_entries')->insert([...$entry, 'transaction_id' => $transaction->id, 'cash_transfer_id' => null, 'amount' => $amount, 'created_at' => now(), 'updated_at' => now()]);
+            DB::table('journal_entries')->insert([...$entry, 'transaction_id' => $transaction->id, 'cash_transfer_id' => null, 'cash_session_id' => null, 'amount' => $amount, 'created_at' => now(), 'updated_at' => now()]);
         }
         $this->audit->record($tellerId, 'transaction.created', 'transaction', $transaction->id, ['request_id' => $requestId, 'amount' => $amount, 'type' => $type]);
         return $transaction;

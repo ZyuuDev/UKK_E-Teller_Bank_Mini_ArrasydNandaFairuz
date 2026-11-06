@@ -216,7 +216,7 @@ function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
   const [confirmResetPin, setConfirmResetPin] = useState(false)
   const [resetMessage, setResetMessage] = useState('')
   const [resetBusy, setResetBusy] = useState(false)
-  const snapshot = tx.pending?.body || tx.review
+  const snapshot = tx.pending?.body || tx.review?.body
   const operation = tx.pending
     ? tx.pending.path.split('/').at(-1)
     : tx.review?.operation
