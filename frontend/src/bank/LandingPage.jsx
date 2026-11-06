@@ -377,6 +377,28 @@ function LiveStatusIndicator({ variant = 'navbar' }) {
     ? 'Buka pukul 13:00 WIB'
     : 'Auto-Close 17:00 WIB'
 
+  if (variant === 'navbar' || variant === 'navbar-mobile') {
+    return (
+      <div
+        className={`lp-live-pill lp-live-pill--${variant}`}
+        title={`Jam Operasional: ${statusData.operating_hours}. Auto-close kas pukul ${statusData.close_time}.`}
+      >
+        <span
+          className={`lp-live-dot ${
+            isOpen
+              ? 'lp-live-dot--open'
+              : isBreak
+              ? 'lp-live-dot--break'
+              : 'lp-live-dot--closed'
+          }`}
+        />
+        <span>
+          <strong>{statusLabel}</strong>
+        </span>
+      </div>
+    )
+  }
+
   return (
     <div
       className={`lp-live-pill ${variant === 'hero' ? 'lp-live-pill--hero' : ''}`}
@@ -512,122 +534,29 @@ export default function LandingPage({ onOpenLogin }) {
 
   return (
     <div className="lp-root">
-      {/* 1. NAVBAR */}
-      <header className="lp-navbar">
-        <div className="lp-container">
-          <div className="lp-navbar__inner">
-            <a
-              href="#beranda"
-              className="lp-brand"
-              onClick={(e) => {
-                e.preventDefault()
-                window.scrollTo({ top: 0, behavior: 'smooth' })
-              }}
-            >
-              <img
-                src="/brand/bank-mini-symbol.png?v=2"
-                alt="Logo Bank Mini SMKN 1 Bantul"
-                className="lp-brand__logo-img"
-              />
-              <div className="lp-brand__text">
-                <span className="lp-brand__title">Bank Mini</span>
-                <span className="lp-brand__subtitle">SMKN 1 Bantul</span>
-              </div>
-            </a>
-
-            <nav className="lp-nav__links" aria-label="Navigasi Utama">
-              <a
-                href="#tentang"
-                className="lp-nav__link"
-                onClick={(e) => {
-                  e.preventDefault()
-                  scrollToSection('ekosistem')
-                }}
-              >
-                Tentang
-              </a>
-              <a
-                href="#kartu-digital"
-                className="lp-nav__link"
-                onClick={(e) => {
-                  e.preventDefault()
-                  scrollToSection('kartu-digital')
-                }}
-              >
-                Kartu Digital
-              </a>
-              <a
-                href="#keamanan"
-                className="lp-nav__link"
-                onClick={(e) => {
-                  e.preventDefault()
-                  scrollToSection('keamanan')
-                }}
-              >
-                Keamanan
-              </a>
-              <a
-                href="#alur-layanan"
-                className="lp-nav__link"
-                onClick={(e) => {
-                  e.preventDefault()
-                  scrollToSection('alur-layanan')
-                }}
-              >
-                Alur Layanan
-              </a>
-              <button
-                type="button"
-                className="lp-nav__link"
-                style={{ background: 'none', border: 'none', padding: 0 }}
-                onClick={() => setGuideModalOpen(true)}
-              >
-                Panduan Unduh
-              </button>
-            </nav>
-
-            <div className="lp-nav__actions">
-              <LiveStatusIndicator variant="navbar" />
-              <button
-                type="button"
-                className="lp-btn lp-btn--outline"
-                onClick={onOpenLogin}
-              >
-                Portal Petugas
-              </button>
-              <a
-                href={apkDownloadUrl}
-                download="BankMini-SKANSABA.apk"
-                className="lp-btn lp-btn--primary"
-              >
-                <Download size={15} />
-                <span>Unduh APK</span>
-              </a>
-            </div>
-
-            <button
-              type="button"
-              className="lp-mobile-menu-btn"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label="Buka menu navigasi"
-            >
-              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Dropdown Menu */}
-        {mobileMenuOpen && (
-          <div
-            style={{
-              padding: '16px 24px 24px',
-              borderTop: '1px solid var(--lp-border)',
-              background: '#ffffff',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '14px',
+      {/* 1. FLOATING NAVBAR (MELAYANG DI SEMUA PERANGKAT) */}
+      <header className="lp-navbar-wrapper">
+        <div className="lp-navbar-floating">
+          <a
+            href="#beranda"
+            className="lp-brand"
+            onClick={(e) => {
+              e.preventDefault()
+              window.scrollTo({ top: 0, behavior: 'smooth' })
             }}
           >
+            <img
+              src="/brand/bank-mini-symbol.png?v=2"
+              alt="Logo Bank Mini SMKN 1 Bantul"
+              className="lp-brand__logo-img"
+            />
+            <div className="lp-brand__text">
+              <span className="lp-brand__title">Bank Mini</span>
+              <span className="lp-brand__subtitle">SMKN 1 Bantul</span>
+            </div>
+          </a>
+
+          <nav className="lp-nav__links" aria-label="Navigasi Utama">
             <a
               href="#ekosistem"
               className="lp-nav__link"
@@ -636,7 +565,7 @@ export default function LandingPage({ onOpenLogin }) {
                 scrollToSection('ekosistem')
               }}
             >
-              Tentang & Ekosistem
+              Tentang
             </a>
             <a
               href="#kartu-digital"
@@ -646,7 +575,7 @@ export default function LandingPage({ onOpenLogin }) {
                 scrollToSection('kartu-digital')
               }}
             >
-              Kartu Tabungan Digital
+              Kartu Digital
             </a>
             <a
               href="#keamanan"
@@ -656,7 +585,7 @@ export default function LandingPage({ onOpenLogin }) {
                 scrollToSection('keamanan')
               }}
             >
-              Standar Keamanan
+              Keamanan
             </a>
             <a
               href="#alur-layanan"
@@ -666,25 +595,112 @@ export default function LandingPage({ onOpenLogin }) {
                 scrollToSection('alur-layanan')
               }}
             >
-              Alur Layanan Loket
+              Alur Layanan
             </a>
             <button
               type="button"
               className="lp-nav__link"
-              style={{
-                background: 'none',
-                border: 'none',
-                textAlign: 'left',
-                padding: 0,
-              }}
-              onClick={() => {
-                setMobileMenuOpen(false)
-                setGuideModalOpen(true)
-              }}
+              style={{ background: 'none', border: 'none' }}
+              onClick={() => setGuideModalOpen(true)}
             >
-              Panduan Unduh APK
+              Panduan Unduh
             </button>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
+          </nav>
+
+          <div className="lp-nav__actions">
+            <LiveStatusIndicator variant="navbar" />
+            <button
+              type="button"
+              className="lp-btn lp-btn--outline lp-btn--nav"
+              onClick={onOpenLogin}
+            >
+              Portal Petugas
+            </button>
+            <a
+              href={apkDownloadUrl}
+              download="BankMini-SKANSABA.apk"
+              className="lp-btn lp-btn--primary lp-btn--nav"
+            >
+              <Download size={14} />
+              <span>Unduh APK</span>
+            </a>
+          </div>
+
+          <div className="lp-navbar__mobile-right">
+            <LiveStatusIndicator variant="navbar-mobile" />
+            <button
+              type="button"
+              className="lp-mobile-menu-btn"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'}
+              aria-expanded={mobileMenuOpen}
+            >
+              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
+        </div>
+
+        {/* Floating Mobile Dropdown Menu */}
+        {mobileMenuOpen && (
+          <div className="lp-mobile-dropdown">
+            <nav className="lp-mobile-dropdown__links">
+              <a
+                href="#ekosistem"
+                className="lp-nav__link"
+                onClick={(e) => {
+                  e.preventDefault()
+                  scrollToSection('ekosistem')
+                }}
+              >
+                Tentang & Layanan
+              </a>
+              <a
+                href="#kartu-digital"
+                className="lp-nav__link"
+                onClick={(e) => {
+                  e.preventDefault()
+                  scrollToSection('kartu-digital')
+                }}
+              >
+                Kartu Tabungan Digital
+              </a>
+              <a
+                href="#keamanan"
+                className="lp-nav__link"
+                onClick={(e) => {
+                  e.preventDefault()
+                  scrollToSection('keamanan')
+                }}
+              >
+                Standar Keamanan
+              </a>
+              <a
+                href="#alur-layanan"
+                className="lp-nav__link"
+                onClick={(e) => {
+                  e.preventDefault()
+                  scrollToSection('alur-layanan')
+                }}
+              >
+                Alur Layanan Loket
+              </a>
+              <button
+                type="button"
+                className="lp-nav__link"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  textAlign: 'left',
+                }}
+                onClick={() => {
+                  setMobileMenuOpen(false)
+                  setGuideModalOpen(true)
+                }}
+              >
+                Panduan Unduh APK
+              </button>
+            </nav>
+            <div className="lp-mobile-dropdown__actions">
               <button
                 type="button"
                 className="lp-btn lp-btn--outline"
@@ -701,8 +717,8 @@ export default function LandingPage({ onOpenLogin }) {
                 className="lp-btn lp-btn--primary"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <Download size={16} />
-                <span>Unduh APK Siswa</span>
+                <Download size={15} />
+                <span>Unduh Aplikasi Siswa (.APK)</span>
               </a>
             </div>
           </div>

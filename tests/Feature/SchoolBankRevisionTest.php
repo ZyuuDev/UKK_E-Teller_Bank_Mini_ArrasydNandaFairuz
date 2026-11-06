@@ -13,6 +13,7 @@ use App\Services\BankingService;
 use App\Services\CashSessionService;
 use App\Services\MemberService;
 use App\Services\StudentImportService;
+use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -30,6 +31,7 @@ class SchoolBankRevisionTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Carbon::setTestNow(Carbon::parse('2026-11-06 10:00:00', 'Asia/Jakarta'));
         if (DB::connection()->getDriverName() !== 'mysql' || DB::connection()->getDatabaseName() !== 'bank_mini_test') {
             throw new \RuntimeException('Tes hanya boleh berjalan pada MySQL bank_mini_test.');
         }
@@ -43,6 +45,7 @@ class SchoolBankRevisionTest extends TestCase
 
     protected function tearDown(): void
     {
+        Carbon::setTestNow();
         while (DB::connection()->transactionLevel() > 0) {
             DB::rollBack();
         }
