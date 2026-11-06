@@ -4,7 +4,6 @@ import {
   ArrowRight,
   ArrowUpRight,
   BookOpen,
-  Calculator,
   Check,
   ChevronRight,
   Clock,
@@ -20,7 +19,6 @@ import {
   Search,
   Settings,
   ShieldCheck,
-  TrendingUp,
   User,
   Wallet,
   X,
@@ -400,168 +398,6 @@ function LiveStatusIndicator({ variant = 'navbar' }) {
   )
 }
 
-function SavingsGoalSimulator() {
-  const PRESETS = [
-    { id: 'laptop', label: 'Laptop Praktik RPL', amount: 5000000, icon: '💻' },
-    { id: 'ukk', label: 'Biaya Uji Sertifikasi (UKK)', amount: 500000, icon: '🎓' },
-    { id: 'modul', label: 'Paket Buku & Modul', amount: 300000, icon: '📚' },
-    { id: 'custom', label: 'Target Kustom Saya', amount: 1500000, icon: '🎯' },
-  ]
-
-  const [activePreset, setActivePreset] = useState('laptop')
-  const [targetAmount, setTargetAmount] = useState(5000000)
-  const [contribution, setContribution] = useState(10000)
-  const [freq, setFreq] = useState('daily')
-
-  function handleSelectPreset(preset) {
-    setActivePreset(preset.id)
-    if (preset.id !== 'custom') {
-      setTargetAmount(preset.amount)
-    }
-  }
-
-  const periodsNeeded = Math.max(1, Math.ceil(targetAmount / contribution))
-  const daysNeeded = freq === 'daily' ? periodsNeeded : periodsNeeded * 7
-
-  const targetDate = new Date()
-  targetDate.setDate(targetDate.getDate() + daysNeeded)
-  const formattedDate = targetDate.toLocaleDateString('id-ID', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
-
-  return (
-    <div className="lp-calculator-container">
-      <div className="lp-calc-controls">
-        <div className="lp-calc-result-badge">
-          <Calculator size={13} />
-          <span>Kalkulator Impian Siswa</span>
-        </div>
-        <h3 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '8px' }}>
-          Simulasi Target Menabung Siswa
-        </h3>
-        <p style={{ fontSize: '14px', color: 'var(--lp-text-muted)', marginBottom: '24px' }}>
-          Tentukan impian masa depanmu, atur setoran dari sisa uang saku sekolah, dan lihat estimasi kapan targetmu terwujud tanpa potongan administrasi sepeser pun.
-        </p>
-
-        <div className="lp-calc-presets">
-          {PRESETS.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              className={`lp-calc-preset-btn ${activePreset === p.id ? 'lp-calc-preset-btn--active' : ''}`}
-              onClick={() => handleSelectPreset(p)}
-            >
-              <span style={{ fontSize: '18px' }}>{p.icon}</span>
-              <span>{p.label}</span>
-            </button>
-          ))}
-        </div>
-
-        <div className="lp-calc-slider-group">
-          <div className="lp-calc-slider-header">
-            <span className="lp-calc-slider-title">Target Tabungan Impian</span>
-            <span className="lp-calc-slider-val">Rp {targetAmount.toLocaleString('id-ID')}</span>
-          </div>
-          <input
-            type="range"
-            min="100000"
-            max="10000000"
-            step="50000"
-            value={targetAmount}
-            onChange={(e) => {
-              setActivePreset('custom')
-              setTargetAmount(Number(e.target.value))
-            }}
-            className="lp-calc-slider-range"
-            aria-label="Target Tabungan Impian"
-          />
-        </div>
-
-        <div style={{ marginBottom: '8px', fontSize: '14px', fontWeight: 600, color: 'var(--lp-text-muted)' }}>
-          Frekuensi Setoran Tabungan
-        </div>
-        <div className="lp-calc-freq-tabs">
-          <button
-            type="button"
-            className={`lp-calc-freq-btn ${freq === 'daily' ? 'lp-calc-freq-btn--active' : ''}`}
-            onClick={() => {
-              setFreq('daily')
-              if (contribution > 50000) setContribution(10000)
-            }}
-          >
-            Harian (Uang Saku)
-          </button>
-          <button
-            type="button"
-            className={`lp-calc-freq-btn ${freq === 'weekly' ? 'lp-calc-freq-btn--active' : ''}`}
-            onClick={() => {
-              setFreq('weekly')
-              if (contribution < 20000) setContribution(50000)
-            }}
-          >
-            Mingguan
-          </button>
-        </div>
-
-        <div className="lp-calc-slider-group">
-          <div className="lp-calc-slider-header">
-            <span className="lp-calc-slider-title">
-              {freq === 'daily' ? 'Nominal Setoran Per Hari' : 'Nominal Setoran Per Minggu'}
-            </span>
-            <span className="lp-calc-slider-val">Rp {contribution.toLocaleString('id-ID')}</span>
-          </div>
-          <input
-            type="range"
-            min={freq === 'daily' ? '2000' : '10000'}
-            max={freq === 'daily' ? '50000' : '200000'}
-            step={freq === 'daily' ? '1000' : '5000'}
-            value={contribution}
-            onChange={(e) => setContribution(Number(e.target.value))}
-            className="lp-calc-slider-range"
-            aria-label="Nominal Setoran"
-          />
-        </div>
-      </div>
-
-      <div className="lp-calc-result-card">
-        <div className="lp-calc-result-header">
-          <div className="lp-calc-result-badge">
-            <TrendingUp size={14} />
-            <span>Estimasi Waktu Pencapaian</span>
-          </div>
-          <div className="lp-calc-result-days">
-            {freq === 'daily' ? `${periodsNeeded} Hari` : `${periodsNeeded} Minggu`}
-          </div>
-          <div className="lp-calc-result-date">
-            Target impian tercapai sekitar <strong>{formattedDate}</strong> ({daysNeeded} hari kalender)
-          </div>
-        </div>
-
-        <div className="lp-calc-result-features">
-          <div className="lp-calc-result-feature-item">
-            <Check size={16} color="#38bdf8" />
-            <span>Bebas biaya administrasi bulanan (tabungan 100% utuh)</span>
-          </div>
-          <div className="lp-calc-result-feature-item">
-            <Check size={16} color="#38bdf8" />
-            <span>Setoran tunai mudah di loket kasir teller sekolah</span>
-          </div>
-          <div className="lp-calc-result-feature-item">
-            <Check size={16} color="#38bdf8" />
-            <span>Riwayat mutasi dan saldo dipantau real-time lewat ponsel</span>
-          </div>
-          <div className="lp-calc-result-feature-item">
-            <Check size={16} color="#38bdf8" />
-            <span>Bunga 0% sesuai prinsip pendidikan dan syariah</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 function VirtualStudentCard() {
   return (
     <div className="lp-fintech-card">
@@ -711,16 +547,6 @@ export default function LandingPage({ onOpenLogin }) {
                 Tentang
               </a>
               <a
-                href="#kalkulator-impian"
-                className="lp-nav__link"
-                onClick={(e) => {
-                  e.preventDefault()
-                  scrollToSection('kalkulator-impian')
-                }}
-              >
-                Simulasi Impian
-              </a>
-              <a
                 href="#kartu-digital"
                 className="lp-nav__link"
                 onClick={(e) => {
@@ -811,16 +637,6 @@ export default function LandingPage({ onOpenLogin }) {
               }}
             >
               Tentang & Ekosistem
-            </a>
-            <a
-              href="#kalkulator-impian"
-              className="lp-nav__link"
-              onClick={(e) => {
-                e.preventDefault()
-                scrollToSection('kalkulator-impian')
-              }}
-            >
-              Simulasi Target Menabung
             </a>
             <a
               href="#kartu-digital"
@@ -1063,26 +879,6 @@ export default function LandingPage({ onOpenLogin }) {
           </div>
         </section>
 
-        {/* SECTION: KALKULATOR IMPIAN MENABUNG SISWA */}
-        <section
-          id="kalkulator-impian"
-          className="lp-section"
-          style={{ background: '#ffffff', borderTop: '1px solid var(--lp-border)' }}
-        >
-          <div className="lp-container">
-            <div className="lp-section-header">
-              <h2 className="lp-section-title">
-                Rencanakan Impian Masa Depanmu
-              </h2>
-              <p className="lp-section-desc">
-                Hitung estimasi waktu menabung dari sisa uang saku sekolah. Tanpa potongan biaya bulanan, tanpa bunga, dan saldo tercatat resmi di sistem kasir sekolah.
-              </p>
-            </div>
-
-            <SavingsGoalSimulator />
-          </div>
-        </section>
-
         {/* SECTION: KARTU TABUNGAN DIGITAL SISWA */}
         <section id="kartu-digital" className="lp-section">
           <div className="lp-container">
@@ -1301,18 +1097,6 @@ export default function LandingPage({ onOpenLogin }) {
                   }}
                 >
                   Tentang
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#kalkulator-impian"
-                  className="lp-footer__link"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    scrollToSection('kalkulator-impian')
-                  }}
-                >
-                  Simulasi Impian
                 </a>
               </li>
               <li>

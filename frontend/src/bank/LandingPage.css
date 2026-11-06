@@ -1459,169 +1459,6 @@
 }
 
 /* ==========================================================================
-   KALKULATOR IMPIAN MENABUNG SISWA
-   ========================================================================== */
-.lp-calculator-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 32px;
-  background: #ffffff;
-  border: 1px solid var(--lp-border);
-  border-radius: var(--lp-radius-xl);
-  padding: 40px;
-  box-shadow: var(--lp-shadow-lg);
-}
-.lp-calc-presets {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  margin-bottom: 24px;
-}
-.lp-calc-preset-btn {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
-  border-radius: var(--lp-radius-md);
-  border: 1px solid var(--lp-border);
-  background: var(--lp-canvas);
-  color: var(--lp-text);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  text-align: left;
-  transition: all 0.2s ease;
-}
-.lp-calc-preset-btn:hover {
-  border-color: var(--lp-brand);
-  background: #ffffff;
-}
-.lp-calc-preset-btn--active {
-  border-color: var(--lp-brand);
-  background: var(--lp-brand-soft);
-  color: var(--lp-brand-active);
-  box-shadow: 0 0 0 2px var(--lp-brand-soft-border);
-}
-.lp-calc-slider-group {
-  margin-bottom: 24px;
-}
-.lp-calc-slider-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-.lp-calc-slider-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--lp-text-muted);
-}
-.lp-calc-slider-val {
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--lp-brand-hover);
-}
-.lp-calc-slider-range {
-  width: 100%;
-  height: 8px;
-  border-radius: 4px;
-  background: #e2e8f0;
-  outline: none;
-  cursor: pointer;
-  accent-color: var(--lp-brand);
-}
-.lp-calc-freq-tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-.lp-calc-freq-btn {
-  flex: 1;
-  padding: 8px;
-  border-radius: var(--lp-radius-sm);
-  border: 1px solid var(--lp-border);
-  background: var(--lp-canvas);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--lp-text-muted);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.lp-calc-freq-btn--active {
-  background: var(--lp-brand);
-  color: #ffffff;
-  border-color: var(--lp-brand);
-}
-
-.lp-calc-result-card {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  border-radius: var(--lp-radius-lg);
-  padding: 32px;
-  color: #ffffff;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  box-shadow: var(--lp-shadow-xl);
-  position: relative;
-  overflow: hidden;
-}
-.lp-calc-result-card::before {
-  content: '';
-  position: absolute;
-  top: -50px;
-  right: -50px;
-  width: 150px;
-  height: 150px;
-  background: radial-gradient(circle, rgba(22, 119, 255, 0.4) 0%, rgba(22, 119, 255, 0) 70%);
-  border-radius: 50%;
-  pointer-events: none;
-}
-.lp-calc-result-header {
-  margin-bottom: 24px;
-}
-.lp-calc-result-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.12);
-  color: #93c5fd;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 12px;
-}
-.lp-calc-result-days {
-  font-size: 34px;
-  font-weight: 800;
-  color: #ffffff;
-  line-height: 1.15;
-  letter-spacing: -0.5px;
-}
-.lp-calc-result-date {
-  font-size: 14px;
-  color: #94a3b8;
-  margin-top: 6px;
-}
-.lp-calc-result-features {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
-  padding-top: 20px;
-  margin-top: 20px;
-}
-.lp-calc-result-feature-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 13px;
-  color: #cbd5e1;
-}
-
-/* ==========================================================================
    VIRTUAL STUDENT DIGITAL PASS CARD
    ========================================================================== */
 .lp-card-showcase-grid {
@@ -1809,10 +1646,6 @@
 
 /* Responsive adjustments */
 @media (max-width: 991px) {
-  .lp-calculator-container {
-    grid-template-columns: 1fr;
-    padding: 24px;
-  }
   .lp-card-showcase-grid {
     grid-template-columns: 1fr;
     text-align: center;
@@ -1822,9 +1655,6 @@
   }
 }
 @media (max-width: 599px) {
-  .lp-calc-presets {
-    grid-template-columns: 1fr;
-  }
   .lp-security-grid {
     grid-template-columns: 1fr;
   }
