@@ -21,6 +21,135 @@ const labels = {
   tutup: 'Loket Tutup',
 }
 
+export const ACTION_LABELS = {
+  'cash_session.opened': 'Buka Sesi Kas Loket',
+  'cash_session.auto_closed': 'Sesi Kas Ditutup Otomatis (17:00 WIB)',
+  'reconciliation.submitted': 'Pengajuan Tutup Kas Loket',
+  'reconciliation.approved': 'Persetujuan Tutup Kas Loket',
+  'reconciliation.rejected': 'Pengembalian Laporan Kas',
+  'cash_request.created': 'Pengajuan Tambahan Kas',
+  'cash_request.approved': 'Persetujuan Tambahan Kas',
+  'cash_request.rejected': 'Penolakan Tambahan Kas',
+  'saver.activated': 'Aktivasi Rekening Siswa Baru',
+  'transaction.created': 'Transaksi Tabungan Siswa',
+  'saver.pin_reset': 'Reset PIN Tabungan Siswa',
+  'student.pin_reset': 'Reset Mandiri PIN Siswa',
+  'staff.created': 'Pendaftaran Petugas Baru',
+  'staff.updated': 'Pembaruan Data Petugas',
+  'student.access_changed': 'Perubahan Hak Akses Siswa',
+  'service_status.updated': 'Pembaruan Status Layanan Loket',
+  'member.created': 'Pendaftaran Data Siswa',
+  'member.updated': 'Pembaruan Data Siswa',
+  'member.deleted': 'Penghapusan Data Siswa',
+  'member.credentials_issued': 'Penerbitan Kredensial Siswa',
+  'members.imported': 'Impor Massal Siswa Selesai',
+  'members.import_progress': 'Progres Impor Massal Siswa',
+  'admin.email_verified': 'Verifikasi Email Admin',
+  'admin.password_reset': 'Reset Password Admin',
+  'teller.email_verified': 'Verifikasi Email Teller',
+  'teller.password_reset': 'Reset Password Teller',
+  'student.email_verified': 'Verifikasi Email Siswa',
+  'student.password_reset': 'Reset Password Siswa',
+}
+
+export const SUBJECT_TYPE_LABELS = {
+  cash_session: 'Sesi Kas Loket',
+  daily_reconciliation: 'Laporan Rekonsiliasi Kas',
+  cash_request: 'Pengajuan Tambahan Kas',
+  saver: 'Rekening Penabung',
+  transaction: 'Transaksi Tabungan',
+  user: 'Akun Pengguna',
+  member: 'Data Siswa',
+  member_import: 'Berkas Impor Siswa',
+  pengaturan: 'Pengaturan Sistem',
+}
+
+export const ROLE_LABELS = {
+  admin: 'Administrator',
+  teller: 'Teller Loket',
+  student: 'Siswa Penabung',
+}
+
+export const DETAIL_FIELD_LABELS = {
+  id: 'ID Data',
+  actor_id: 'ID Petugas / Pelaku',
+  actor_name: 'Nama Petugas',
+  actor_username: 'Username Petugas',
+  actor_role: 'Peran Petugas',
+  action: 'Jenis Aktivitas',
+  subject_type: 'Objek Terkait',
+  subject_id: 'ID Objek Terkait',
+  created_at: 'Waktu Kejadian',
+  updated_at: 'Waktu Pembaruan',
+  opening_balance: 'Modal Kas Awal',
+  expected_closing_balance: 'Kas Sistem (Ekspektasi)',
+  actual_cash_on_hand: 'Uang Fisik Kas',
+  discrepancy: 'Selisih Kas',
+  amount: 'Nominal Transaksi',
+  type: 'Jenis Transaksi',
+  request_id: 'ID Permintaan Unik',
+  reason: 'Alasan',
+  rejection_reason: 'Catatan Penolakan / Keterangan Sistem',
+  rejection_notes: 'Catatan Penolakan',
+  notes: 'Catatan',
+  cash_session_id: 'ID Sesi Kas',
+  cash_transfer_id: 'ID Serah Terima Kas',
+  daily_reconciliation_id: 'ID Rekonsiliasi Kas',
+  teller_id: 'ID Teller',
+  account_code: 'Kode Akun Akuntansi',
+  entry_type: 'Posisi Buku Besar (Debit/Kredit)',
+  balance_after: 'Saldo Setelah Transaksi',
+  snapshot_account_number: 'Nomor Rekening',
+  snapshot_member_name: 'Nama Siswa',
+  date: 'Tanggal',
+  status: 'Status',
+}
+
+export function formatAction(action) {
+  if (!action) return 'Aktivitas Tidak Diketahui'
+  return ACTION_LABELS[action] || action.replace(/[._]/g, ' ')
+}
+
+export function formatSubject(type) {
+  if (!type) return 'Objek'
+  return SUBJECT_TYPE_LABELS[type] || type.replace(/[._]/g, ' ')
+}
+
+export function formatRole(role) {
+  if (!role) return 'Pengguna'
+  return ROLE_LABELS[role] || role
+}
+
+export function formatDetailLabel(key) {
+  return DETAIL_FIELD_LABELS[key] || key.replace(/[._]/g, ' ')
+}
+
+export function AuditActionBadge({ action }) {
+  const isAutoClose = action === 'cash_session.auto_closed'
+  const isApprove = action?.includes('approved') || action === 'saver.activated'
+  const isReject = action?.includes('rejected') || action?.includes('deleted')
+  const isWarning = action?.includes('reset') || isAutoClose
+
+  let variant = 'primary'
+  if (isAutoClose || isReject) variant = 'danger'
+  else if (isApprove) variant = 'success'
+  else if (isWarning) variant = 'warning'
+
+  return (
+    <span className={`audit-badge audit-badge--${variant}`}>
+      {formatAction(action)}
+    </span>
+  )
+}
+
+export function UserRoleBadge({ role }) {
+  return (
+    <span className={`role-pill role-pill--${role || 'student'}`}>
+      {formatRole(role)}
+    </span>
+  )
+}
+
 export function Button({
   variant = 'primary',
   busy = false,

@@ -1,6 +1,15 @@
 import { ClipboardCheck, Landmark, Users } from 'lucide-react'
 import { useResource } from '../api'
-import { Button, DataTable, PageHeader, ResourceState, StatCard } from '../ui'
+import {
+  AuditActionBadge,
+  Button,
+  DataTable,
+  PageHeader,
+  ResourceState,
+  StatCard,
+  UserRoleBadge,
+  formatSubject,
+} from '../ui'
 
 export default function OverviewPage() {
   const members = useResource('/admin/members?page=1')
@@ -32,7 +41,7 @@ export default function OverviewPage() {
       </div>
       <section className="bank-panel">
         <div className="bank-panel__head">
-          <h2>Aktivitas terbaru</h2>
+          <h2>Aktivitas pelayanan terbaru</h2>
           <Button
             variant="secondary"
             onClick={() => {
@@ -46,8 +55,8 @@ export default function OverviewPage() {
           </Button>
         </div>
         <p className="muted">
-          Lima catatan terbaru. Laporan berstatus ada selisih diperiksa melalui menu
-          Laporan kas.
+          Lima catatan aktivitas perbankan terbaru. Laporan berstatus ada selisih
+          diperiksa melalui menu Laporan kas.
         </p>
         <ResourceState resource={audit}>
           <DataTable
@@ -58,14 +67,51 @@ export default function OverviewPage() {
                 'created_at',
                 'Waktu',
                 null,
-                (row) =>
-                  new Date(row.created_at).toLocaleString('id-ID', {
-                    timeZone: 'Asia/Jakarta',
-                  }),
+                (row) => (
+                  <span style={{ whiteSpace: 'nowrap', fontSize: '13px' }}>
+                    {new Date(row.created_at).toLocaleTimeString('id-ID', {
+                      timeZone: 'Asia/Jakarta',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}{' '}
+                    WIB
+                  </span>
+                ),
               ],
-              ['action', 'Aktivitas'],
-              ['actor_id', 'ID pelaku'],
-              ['subject_id', 'ID objek'],
+              [
+                'action',
+                'Aktivitas Pelayanan',
+                null,
+                (row) => <AuditActionBadge action={row.action} />,
+              ],
+              [
+                'actor',
+                'Petugas / Pelaku',
+                null,
+                (row) => (
+                  <div className="audit-actor-card">
+                    <span className="audit-actor-card__name">
+                      {row.actor_name || row.actor_username || `ID ${row.actor_id}`}
+                    </span>
+                    <div className="audit-actor-card__meta">
+                      <UserRoleBadge role={row.actor_role} />
+                    </div>
+                  </div>
+                ),
+              ],
+              [
+                'subject',
+                'Objek Terkait',
+                null,
+                (row) => (
+                  <span>
+                    {formatSubject(row.subject_type)}
+                    {row.subject_id ? (
+                      <span className="muted"> #{row.subject_id}</span>
+                    ) : null}
+                  </span>
+                ),
+              ],
             ]}
           />
         </ResourceState>

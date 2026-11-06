@@ -1402,3 +1402,430 @@
     font-size: 26px;
   }
 }
+
+
+/* ==========================================================================
+   LIVE LOKET STATUS PILL & INDICATOR
+   ========================================================================== */
+.lp-live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 600;
+  background: #ffffff;
+  border: 1px solid var(--lp-border);
+  box-shadow: var(--lp-shadow-sm);
+  transition: all 0.2s ease;
+}
+.lp-live-pill--hero {
+  margin-bottom: 16px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+}
+.lp-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  position: relative;
+}
+.lp-live-dot--open {
+  background: #10b981;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: lp-pulse-green 2s infinite;
+}
+.lp-live-dot--break {
+  background: #f59e0b;
+}
+.lp-live-dot--closed {
+  background: #ef4444;
+}
+
+@keyframes lp-pulse-green {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+/* ==========================================================================
+   KALKULATOR IMPIAN MENABUNG SISWA
+   ========================================================================== */
+.lp-calculator-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  background: #ffffff;
+  border: 1px solid var(--lp-border);
+  border-radius: var(--lp-radius-xl);
+  padding: 40px;
+  box-shadow: var(--lp-shadow-lg);
+}
+.lp-calc-presets {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.lp-calc-preset-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--lp-radius-md);
+  border: 1px solid var(--lp-border);
+  background: var(--lp-canvas);
+  color: var(--lp-text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+.lp-calc-preset-btn:hover {
+  border-color: var(--lp-brand);
+  background: #ffffff;
+}
+.lp-calc-preset-btn--active {
+  border-color: var(--lp-brand);
+  background: var(--lp-brand-soft);
+  color: var(--lp-brand-active);
+  box-shadow: 0 0 0 2px var(--lp-brand-soft-border);
+}
+.lp-calc-slider-group {
+  margin-bottom: 24px;
+}
+.lp-calc-slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.lp-calc-slider-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--lp-text-muted);
+}
+.lp-calc-slider-val {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--lp-brand-hover);
+}
+.lp-calc-slider-range {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: #e2e8f0;
+  outline: none;
+  cursor: pointer;
+  accent-color: var(--lp-brand);
+}
+.lp-calc-freq-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.lp-calc-freq-btn {
+  flex: 1;
+  padding: 8px;
+  border-radius: var(--lp-radius-sm);
+  border: 1px solid var(--lp-border);
+  background: var(--lp-canvas);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--lp-text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.lp-calc-freq-btn--active {
+  background: var(--lp-brand);
+  color: #ffffff;
+  border-color: var(--lp-brand);
+}
+
+.lp-calc-result-card {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border-radius: var(--lp-radius-lg);
+  padding: 32px;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: var(--lp-shadow-xl);
+  position: relative;
+  overflow: hidden;
+}
+.lp-calc-result-card::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 150px;
+  height: 150px;
+  background: radial-gradient(circle, rgba(22, 119, 255, 0.4) 0%, rgba(22, 119, 255, 0) 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.lp-calc-result-header {
+  margin-bottom: 24px;
+}
+.lp-calc-result-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #93c5fd;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}
+.lp-calc-result-days {
+  font-size: 34px;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.15;
+  letter-spacing: -0.5px;
+}
+.lp-calc-result-date {
+  font-size: 14px;
+  color: #94a3b8;
+  margin-top: 6px;
+}
+.lp-calc-result-features {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding-top: 20px;
+  margin-top: 20px;
+}
+.lp-calc-result-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #cbd5e1;
+}
+
+/* ==========================================================================
+   VIRTUAL STUDENT DIGITAL PASS CARD
+   ========================================================================== */
+.lp-card-showcase-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: center;
+}
+.lp-fintech-card {
+  width: 100%;
+  max-width: 420px;
+  aspect-ratio: 1.586 / 1;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border-radius: 20px;
+  padding: 26px 28px;
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  margin: 0 auto;
+}
+.lp-fintech-card__shimmer {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 200%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    transparent 100%
+  );
+  transform: skewX(-20deg);
+  pointer-events: none;
+}
+.lp-fintech-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.lp-fintech-card__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.lp-fintech-card__logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+.lp-fintech-card__title {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  line-height: 1.2;
+}
+.lp-fintech-card__subtitle {
+  font-size: 10px;
+  opacity: 0.75;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.lp-fintech-card__emv {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.lp-emv-chip {
+  width: 38px;
+  height: 28px;
+  background: linear-gradient(135deg, #eab308 0%, #facc15 50%, #ca8a04 100%);
+  border-radius: 6px;
+  position: relative;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+.lp-emv-chip::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 10px;
+  right: 10px;
+  border-left: 1px solid rgba(0, 0, 0, 0.25);
+  border-right: 1px solid rgba(0, 0, 0, 0.25);
+}
+.lp-fintech-card__num {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #f8fafc;
+  margin-bottom: 18px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+.lp-fintech-card__bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+.lp-fintech-card__holder-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  color: #94a3b8;
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+}
+.lp-fintech-card__holder-name {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.lp-fintech-card__qr-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   INSTITUTIONAL SECURITY 4-LAYER SHOWCASE
+   ========================================================================== */
+.lp-security-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+.lp-security-card {
+  background: #ffffff;
+  border: 1px solid var(--lp-border);
+  border-radius: var(--lp-radius-lg);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s ease;
+  box-shadow: var(--lp-shadow-sm);
+}
+.lp-security-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--lp-shadow-md);
+  border-color: var(--lp-border-hover);
+}
+.lp-security-card__icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--lp-brand-soft);
+  color: var(--lp-brand-hover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.lp-security-card__badge {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #f1f5f9;
+  color: #475569;
+  margin-bottom: 12px;
+}
+.lp-security-card__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--lp-text);
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+.lp-security-card__desc {
+  font-size: 13px;
+  color: var(--lp-text-muted);
+  line-height: 1.5;
+}
+
+/* Responsive adjustments */
+@media (max-width: 991px) {
+  .lp-calculator-container {
+    grid-template-columns: 1fr;
+    padding: 24px;
+  }
+  .lp-card-showcase-grid {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  .lp-security-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 599px) {
+  .lp-calc-presets {
+    grid-template-columns: 1fr;
+  }
+  .lp-security-grid {
+    grid-template-columns: 1fr;
+  }
+}

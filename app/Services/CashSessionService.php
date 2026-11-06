@@ -6,6 +6,7 @@ use App\Models\CashRequest;
 use App\Models\DailyReconciliation;
 use App\Models\Transaction;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
@@ -39,8 +40,133 @@ class CashSessionService
         ];
     }
 
+    public function getOperatingHours(): array
+    {
+        return [
+            'open_time' => (string) config('bank.operating_hours.open_time', '07:30'),
+            'close_time' => (string) config('bank.operating_hours.close_time', '17:00'),
+            'timezone' => (string) config('bank.operating_hours.timezone', 'Asia/Jakarta'),
+        ];
+    }
+
+    public function isOperatingHoursEnforced(): bool
+    {
+        if (app()->environment('testing') && !config('bank.operating_hours.enforce_in_testing', false)) {
+            return false;
+        }
+        return (bool) config('bank.operating_hours.enforce', true);
+    }
+
+    public function isPastClosingTime(?\DateTimeInterface $referenceTime = null): bool
+    {
+        if (!$this->isOperatingHoursEnforced()) {
+            return false;
+        }
+
+        $tz = config('bank.operating_hours.timezone', 'Asia/Jakarta');
+        $now = $referenceTime ? Carbon::parse($referenceTime)->setTimezone($tz) : now($tz);
+        $closeTime = config('bank.operating_hours.close_time', '17:00');
+
+        return $now->format('H:i') >= $closeTime;
+    }
+
+    public function autoCloseForgottenSessions(?\DateTimeInterface $referenceTime = null): int
+    {
+        $tz = config('bank.operating_hours.timezone', 'Asia/Jakarta');
+        $now = $referenceTime ? Carbon::parse($referenceTime)->setTimezone($tz) : now($tz);
+        $today = $now->toDateString();
+        $currentTimeStr = $now->format('H:i');
+        $closeTimeStr = config('bank.operating_hours.close_time', '17:00');
+        $isPastClosing = $currentTimeStr >= $closeTimeStr;
+
+        $query = DB::table('cash_sessions')
+            ->where('status', 'open')
+            ->where(function ($q) use ($today, $isPastClosing) {
+                // Sesi hari sebelumnya yang belum ditutup
+                $q->where('date', '<', $today);
+                // Sesi hari ini jika jam sudah mencapai atau melewati jam tutup (17:00 WIB)
+                if ($isPastClosing) {
+                    $q->orWhere('date', $today);
+                }
+            });
+
+        $sessionsToClose = $query->get();
+        $closedCount = 0;
+
+        foreach ($sessionsToClose as $session) {
+            DB::transaction(function () use ($session, &$closedCount) {
+                $locked = DB::table('cash_sessions')
+                    ->where('id', $session->id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$locked || $locked->status !== 'open') {
+                    return;
+                }
+
+                $summary = $this->summary($locked);
+                $actualCash = 0; // Uang fisik dicatat Rp 0 sesuai ketentuan auto-close
+                $discrepancy = 0 - $summary['expected_closing_balance'];
+
+                $report = DailyReconciliation::where('cash_session_id', $locked->id)
+                    ->lockForUpdate()
+                    ->first();
+
+                $autoCloseNote = 'Sesi kas ditutup otomatis oleh sistem pada pukul 17:00 WIB karena teller belum melakukan tutup kas loket. Uang fisik tercatat Rp 0 dan memerlukan verifikasi fisik kas oleh Supervisor.';
+
+                $data = [
+                    'cash_session_id' => $locked->id,
+                    'teller_id' => $locked->teller_id,
+                    'date' => $locked->date,
+                    'opening_balance' => $summary['opening_balance'],
+                    'total_deposits' => $summary['total_deposits'],
+                    'total_withdrawals' => $summary['total_withdrawals'],
+                    'expected_closing_balance' => $summary['expected_closing_balance'],
+                    'actual_cash_on_hand' => $actualCash,
+                    'discrepancy' => $discrepancy,
+                    'status' => 'disputed',
+                    'approved_by' => null,
+                    'approved_at' => null,
+                    'rejected_by' => null,
+                    'rejected_at' => null,
+                    'rejection_reason' => $autoCloseNote,
+                ];
+
+                if ($report) {
+                    $report->update($data);
+                } else {
+                    $report = DailyReconciliation::create($data);
+                }
+
+                DB::table('cash_sessions')->where('id', $locked->id)->update([
+                    'status' => 'submitted',
+                    'updated_at' => now(),
+                ]);
+
+                $this->audit->record($locked->teller_id, 'cash_session.auto_closed', 'daily_reconciliation', $report->id, [
+                    'reason' => 'Auto-closed at 17:00 WIB',
+                    'expected_closing_balance' => $summary['expected_closing_balance'],
+                    'actual_cash_on_hand' => 0,
+                    'discrepancy' => $discrepancy,
+                ]);
+
+                $closedCount++;
+            }, 5);
+        }
+
+        return $closedCount;
+    }
+
     public function open(int $tellerId, int $openingBalance): array
     {
+        $this->autoCloseForgottenSessions();
+
+        abort_if(
+            $this->isPastClosingTime(),
+            422,
+            'Loket pelayanan kas telah ditutup untuk hari ini (Batas operasional 17:00 WIB).'
+        );
+
         return DB::transaction(function () use ($tellerId, $openingBalance) {
             User::whereKey($tellerId)->lockForUpdate()->firstOrFail();
             $today = today()->toDateString();
@@ -64,6 +190,7 @@ class CashSessionService
 
     public function submit(int $sessionId, int $tellerId, int $actualCash): DailyReconciliation
     {
+        $this->autoCloseForgottenSessions();
         return DB::transaction(function () use ($sessionId, $tellerId, $actualCash) {
             $session = DB::table('cash_sessions')->where('id', $sessionId)->where('teller_id', $tellerId)->lockForUpdate()->first();
             abort_unless($session, 404);

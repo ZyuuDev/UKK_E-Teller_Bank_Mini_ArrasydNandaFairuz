@@ -22,4 +22,12 @@ return [
         'ip_window_seconds' => 600,
         'max_active_tokens' => (int) env('BANK_MAX_ACTIVE_TOKENS', 3),
     ],
+
+    // Jam operasional loket kas teller dan auto-close kas 17:00 WIB
+    'operating_hours' => [
+        'open_time' => env('BANK_OPERATING_OPEN', '07:30'),
+        'close_time' => env('BANK_OPERATING_CLOSE', '17:00'),
+        'timezone' => env('BANK_TIMEZONE', 'Asia/Jakarta'),
+        'enforce' => env('BANK_ENFORCE_OPERATING_HOURS', true),
+    ],
 ];

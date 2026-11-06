@@ -322,7 +322,24 @@ export default function ReportsPage({ teller = false }) {
               ['expected_closing_balance', 'Kas sistem', 'money'],
               ['actual_cash_on_hand', 'Uang fisik', 'money'],
               ['discrepancy', 'Selisih', 'money'],
-              ['status', 'Status', 'status'],
+              [
+                'status',
+                'Status',
+                null,
+                (row) => (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                    <Status value={row.status} />
+                    {row.rejection_reason?.includes('17:00 WIB') && (
+                      <span
+                        className="audit-badge audit-badge--danger"
+                        style={{ fontSize: '10px', padding: '2px 6px' }}
+                      >
+                        Auto-Close 17:00
+                      </span>
+                    )}
+                  </div>
+                ),
+              ],
             ]}
             actions={(row) => (
               <Button
@@ -354,6 +371,34 @@ export default function ReportsPage({ teller = false }) {
         <Notice error>{error}</Notice>
         {selected && (
           <>
+            {selected.rejection_reason?.includes('17:00 WIB') && (
+              <div
+                style={{
+                  padding: '12px 14px',
+                  background: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  borderRadius: '10px',
+                  marginBottom: '16px',
+                  color: '#991b1b',
+                  fontSize: '13px',
+                  lineHeight: '1.5',
+                }}
+              >
+                <strong
+                  style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    marginBottom: '4px',
+                  }}
+                >
+                  ⚠️ Sesi Kas Ditutup Otomatis oleh Sistem (17:00 WIB)
+                </strong>
+                Sesi kas ini ditutup otomatis oleh sistem karena teller belum
+                melakukan tutup kas loket hingga batas operasional pukul 17:00 WIB.
+                Uang fisik tercatat Rp 0 dan memerlukan verifikasi serta penghitungan
+                fisik manual oleh Supervisor.
+              </div>
+            )}
             <Status value={selected.status} />
             <dl className="bank-detail-list admin-footnote">
               <DetailRow label="Referensi laporan">{selected.id}</DetailRow>

@@ -11,8 +11,9 @@ use Illuminate\Support\Facades\DB;
 
 class ReconciliationController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request, CashSessionService $sessions)
     {
+        $sessions->autoCloseForgottenSessions();
         $request->validate(['status' => 'nullable|in:pending,approved,disputed,rejected']);
         $query = DailyReconciliation::with('teller:id,name', 'approver:id,name')->orderByDesc('date')->orderByDesc('id');
         if ($request->filled('status')) {
@@ -58,8 +59,38 @@ class ReconciliationController extends Controller
         return response()->json(['data' => DB::table('journal_entries')->orderByDesc('id')->paginate(50)]);
     }
 
-    public function audit()
+    public function audit(Request $request)
     {
-        return response()->json(['data' => DB::table('audit_logs')->orderByDesc('id')->paginate(50)]);
+        $query = DB::table('audit_logs')
+            ->leftJoin('users', 'audit_logs.actor_id', '=', 'users.id')
+            ->select([
+                'audit_logs.id',
+                'audit_logs.actor_id',
+                'users.name as actor_name',
+                'users.username as actor_username',
+                'users.role as actor_role',
+                'audit_logs.action',
+                'audit_logs.subject_type',
+                'audit_logs.subject_id',
+                'audit_logs.details',
+                'audit_logs.created_at',
+            ])
+            ->orderByDesc('audit_logs.id');
+
+        if ($request->filled('search')) {
+            $search = '%' . $request->search . '%';
+            $query->where(function ($q) use ($search) {
+                $q->where('users.name', 'like', $search)
+                    ->orWhere('users.username', 'like', $search)
+                    ->orWhere('audit_logs.action', 'like', $search)
+                    ->orWhere('audit_logs.subject_type', 'like', $search);
+            });
+        }
+
+        if ($request->filled('action')) {
+            $query->where('audit_logs.action', $request->action);
+        }
+
+        return response()->json(['data' => $query->paginate(50)]);
     }
 }

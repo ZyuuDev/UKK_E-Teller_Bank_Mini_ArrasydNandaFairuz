@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { useResource } from '../api'
+import { money, useResource } from '../api'
 import {
+  AuditActionBadge,
   Button,
   DataTable,
   DetailRow,
@@ -8,6 +9,9 @@ import {
   PageHeader,
   Pager,
   ResourceState,
+  UserRoleBadge,
+  formatDetailLabel,
+  formatSubject,
 } from '../ui'
 
 function JsonDetail({ value }) {
@@ -34,20 +38,58 @@ export default function LedgerPage({ audit = false }) {
   const list = useResource(`/admin/${audit ? 'audit-logs' : 'journals'}?page=${page}`)
   const columns = audit
     ? [
-        ['id', 'ID audit'],
+        ['id', 'ID'],
         [
           'created_at',
-          'Waktu',
+          'Waktu Kejadian',
           null,
-          (row) =>
-            new Date(row.created_at).toLocaleString('id-ID', {
-              timeZone: 'Asia/Jakarta',
-            }),
+          (row) => (
+            <div style={{ whiteSpace: 'nowrap' }}>
+              {new Date(row.created_at).toLocaleString('id-ID', {
+                timeZone: 'Asia/Jakarta',
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+              })}
+            </div>
+          ),
         ],
-        ['actor_id', 'ID pelaku'],
-        ['action', 'Aktivitas'],
-        ['subject_type', 'Jenis objek'],
-        ['subject_id', 'ID objek'],
+        [
+          'action',
+          'Aktivitas Pelayanan',
+          null,
+          (row) => <AuditActionBadge action={row.action} />,
+        ],
+        [
+          'actor',
+          'Petugas / Pelaku',
+          null,
+          (row) => (
+            <div className="audit-actor-card">
+              <span className="audit-actor-card__name">
+                {row.actor_name || row.actor_username || `ID ${row.actor_id}`}
+              </span>
+              <div className="audit-actor-card__meta">
+                <UserRoleBadge role={row.actor_role} />
+                {row.actor_username && <span>@{row.actor_username}</span>}
+              </div>
+            </div>
+          ),
+        ],
+        [
+          'subject',
+          'Objek Terkait',
+          null,
+          (row) => (
+            <div>
+              <strong>{formatSubject(row.subject_type)}</strong>
+              {row.subject_id ? <span className="muted"> #{row.subject_id}</span> : null}
+            </div>
+          ),
+        ],
       ]
     : [
         ['id', 'ID jurnal'],
@@ -110,15 +152,43 @@ export default function LedgerPage({ audit = false }) {
             <dl className="bank-detail-list">
               {Object.entries(selected)
                 .filter(([key]) => key !== 'details')
-                .map(([key, value]) => (
-                  <DetailRow key={key} label={key}>
-                    {typeof value === 'object' && value !== null ? (
-                      <JsonDetail value={value} />
-                    ) : (
-                      (value ?? 'Tidak tersedia')
-                    )}
-                  </DetailRow>
-                ))}
+                .map(([key, value]) => {
+                  let displayValue = value ?? 'Tidak tersedia'
+                  if (
+                    [
+                      'opening_balance',
+                      'expected_closing_balance',
+                      'actual_cash_on_hand',
+                      'discrepancy',
+                      'amount',
+                      'balance_after',
+                    ].includes(key) &&
+                    typeof value === 'number'
+                  ) {
+                    displayValue = money(value)
+                  } else if (key === 'action') {
+                    displayValue = <AuditActionBadge action={value} />
+                  } else if (key === 'subject_type') {
+                    displayValue = formatSubject(value)
+                  } else if (key === 'actor_role') {
+                    displayValue = <UserRoleBadge role={value} />
+                  } else if (
+                    (key === 'created_at' || key === 'updated_at') &&
+                    value
+                  ) {
+                    displayValue = new Date(value).toLocaleString('id-ID', {
+                      timeZone: 'Asia/Jakarta',
+                    })
+                  } else if (typeof value === 'object' && value !== null) {
+                    displayValue = <JsonDetail value={value} />
+                  }
+
+                  return (
+                    <DetailRow key={key} label={formatDetailLabel(key)}>
+                      {displayValue}
+                    </DetailRow>
+                  )
+                })}
             </dl>
             {'details' in selected && (
               <>

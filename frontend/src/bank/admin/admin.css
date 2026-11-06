@@ -149,6 +149,78 @@
   border-radius: 12px;
   font-size: 12px;
 }
+
+/* Human-friendly audit activity & role badges */
+.audit-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--surface-subdued);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+.audit-badge--primary {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+.audit-badge--success {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+.audit-badge--warning {
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fde68a;
+}
+.audit-badge--danger {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+.audit-actor-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.audit-actor-card__name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+.audit-actor-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.role-pill {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.role-pill--admin {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+.role-pill--teller {
+  background: #ecfdf5;
+  color: #047857;
+}
+.role-pill--student {
+  background: #f3f4f6;
+  color: #374151;
+}
 @media (max-width: 1279px) {
   .admin-filters {
     grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -24,9 +24,13 @@ class BankingService
 
     private function session(int $tellerId): object
     {
+        app(CashSessionService::class)->autoCloseForgottenSessions();
         $session = DB::table('cash_sessions')->where('teller_id', $tellerId)->where('date', today()->toDateString())->lockForUpdate()->first();
         if (!$session) {
             $this->reject('session', 'Buka sesi kas hari ini terlebih dahulu.');
+        }
+        if ($session->status !== 'open') {
+            $this->reject('session', 'Sesi kas telah ditutup untuk hari ini (Auto-Close 17:00 WIB). Tidak dapat memproses transaksi.');
         }
         return $session;
     }

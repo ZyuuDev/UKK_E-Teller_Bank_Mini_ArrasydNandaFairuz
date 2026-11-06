@@ -15,6 +15,7 @@ class CashSessionController extends Controller
 {
     public function index(Request $request, CashSessionService $sessions)
     {
+        $sessions->autoCloseForgottenSessions();
         $rows = DB::table('cash_sessions')->where('teller_id', $request->user()->id)->orderByDesc('date')->limit(30)->get();
         return response()->json(['data' => $rows->map(fn ($session) => $sessions->summary($session))]);
     }
@@ -36,9 +37,33 @@ class CashSessionController extends Controller
         return response()->json(['data' => DailyReconciliation::where('teller_id', $request->user()->id)->orderByDesc('date')->paginate(25)]);
     }
 
-    public function serviceStatus()
+    public function serviceStatus(CashSessionService $sessions)
     {
-        return response()->json(['data' => ['status' => Pengaturan::getStatusLayanan()]]);
+        $sessions->autoCloseForgottenSessions();
+        $tz = config('bank.operating_hours.timezone', 'Asia/Jakarta');
+        $now = now($tz);
+        $timeStr = $now->format('H:i');
+        $openTime = config('bank.operating_hours.open_time', '07:30');
+        $closeTime = config('bank.operating_hours.close_time', '17:00');
+
+        $isWithinHours = $timeStr >= $openTime && $timeStr < $closeTime;
+        $dbStatus = Pengaturan::getStatusLayanan();
+
+        $effectiveStatus = $dbStatus;
+        if (!$isWithinHours && $dbStatus === 'buka') {
+            $effectiveStatus = 'tutup';
+        }
+
+        return response()->json([
+            'data' => [
+                'status' => $effectiveStatus,
+                'manual_status' => $dbStatus,
+                'is_open' => $effectiveStatus === 'buka',
+                'operating_hours' => "{$openTime} - {$closeTime} WIB",
+                'close_time' => "{$closeTime} WIB",
+                'server_time' => $now->format('H:i:s'),
+            ],
+        ]);
     }
 
     public function updateServiceStatus(Request $request, AuditService $audit)
