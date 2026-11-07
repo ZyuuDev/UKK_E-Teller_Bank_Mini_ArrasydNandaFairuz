@@ -308,7 +308,7 @@ export default function OverviewPage({ onNavigate }) {
                   </span>
                   <span>Impor Siswa Massal (.CSV)</span>
                 </div>
-                <ArrowRight size={14} color="var(--text-secondary)" />
+                <ArrowRight size={14} className="admin-quick-btn__arrow" />
               </button>
 
               <button
@@ -322,7 +322,7 @@ export default function OverviewPage({ onNavigate }) {
                   </span>
                   <span>Kelola Data Anggota Siswa</span>
                 </div>
-                <ArrowRight size={14} color="var(--text-secondary)" />
+                <ArrowRight size={14} className="admin-quick-btn__arrow" />
               </button>
 
               <button
@@ -336,7 +336,7 @@ export default function OverviewPage({ onNavigate }) {
                   </span>
                   <span>Rekening Penabung & Reset PIN</span>
                 </div>
-                <ArrowRight size={14} color="var(--text-secondary)" />
+                <ArrowRight size={14} className="admin-quick-btn__arrow" />
               </button>
 
               <button
@@ -350,7 +350,7 @@ export default function OverviewPage({ onNavigate }) {
                   </span>
                   <span>Laporan Kas & Rekonsiliasi</span>
                 </div>
-                <ArrowRight size={14} color="var(--text-secondary)" />
+                <ArrowRight size={14} className="admin-quick-btn__arrow" />
               </button>
 
               <button
@@ -364,7 +364,7 @@ export default function OverviewPage({ onNavigate }) {
                   </span>
                   <span>Jurnal Akuntansi Kas</span>
                 </div>
-                <ArrowRight size={14} color="var(--text-secondary)" />
+                <ArrowRight size={14} className="admin-quick-btn__arrow" />
               </button>
             </div>
           </section>

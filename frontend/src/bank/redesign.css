@@ -204,6 +204,16 @@
     background var(--duration-fast),
     border-color var(--duration-fast);
 }
+button.bank-button--primary {
+  background: var(--action);
+  border-color: var(--action);
+  color: #ffffff;
+}
+button.bank-button--primary:hover:not(:disabled) {
+  background: var(--action-hover);
+  border-color: var(--action-hover);
+  color: #ffffff;
+}
 button.bank-button--secondary {
   background: var(--surface);
   border-color: var(--border);

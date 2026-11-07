@@ -157,10 +157,13 @@ button,
   cursor: pointer;
 }
 
-button:hover:not(:disabled),
+button:not([class]):hover:not(:disabled),
+button.button:hover:not(:disabled),
+button.primary:hover:not(:disabled),
 .button:hover {
   background: var(--action-hover);
   border-color: var(--action-hover);
+  color: #ffffff;
 }
 
 button.secondary,

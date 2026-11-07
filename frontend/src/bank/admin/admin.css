@@ -567,6 +567,7 @@
   flex-direction: column;
   gap: 8px;
 }
+button.admin-quick-btn,
 .admin-quick-btn {
   display: flex;
   align-items: center;
@@ -574,21 +575,32 @@
   width: 100%;
   padding: 10px 14px;
   min-height: 44px;
-  background: var(--surface-subdued);
-  border: 1px solid var(--border);
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 10px;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 600;
-  color: var(--text);
+  color: var(--text) !important;
   cursor: pointer;
   text-align: left;
   transition: all 0.15s ease;
+  box-shadow: none !important;
 }
+button.admin-quick-btn:hover:not(:disabled),
 .admin-quick-btn:hover {
-  background: var(--subtle-blue);
-  border-color: rgba(22, 119, 255, 0.4);
-  color: var(--action);
-  transform: translateX(2px);
+  background: #ffffff !important;
+  border-color: var(--brand) !important;
+  color: var(--brand) !important;
+  box-shadow: 0 4px 14px rgba(22, 119, 255, 0.12) !important;
+  transform: translateX(3px);
+}
+button.admin-quick-btn:hover:not(:disabled) span,
+.admin-quick-btn:hover span {
+  color: var(--brand) !important;
+}
+button.admin-quick-btn:hover:not(:disabled) svg,
+.admin-quick-btn:hover svg {
+  color: var(--brand) !important;
 }
 .admin-quick-btn__content {
   display: flex;
@@ -596,15 +608,35 @@
   gap: 10px;
 }
 .admin-quick-btn__icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--subtle-blue);
+  border: 1px solid rgba(22, 119, 255, 0.15);
   color: var(--action);
   display: grid;
   place-items: center;
   flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+button.admin-quick-btn:hover:not(:disabled) .admin-quick-btn__icon,
+.admin-quick-btn:hover .admin-quick-btn__icon {
+  background: var(--brand) !important;
+  color: #ffffff !important;
+  border-color: var(--brand) !important;
+}
+button.admin-quick-btn:hover:not(:disabled) .admin-quick-btn__icon svg,
+.admin-quick-btn:hover .admin-quick-btn__icon svg {
+  color: #ffffff !important;
+}
+.admin-quick-btn__arrow {
+  color: var(--text-secondary);
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+button.admin-quick-btn:hover:not(:disabled) .admin-quick-btn__arrow,
+.admin-quick-btn:hover .admin-quick-btn__arrow {
+  color: var(--brand) !important;
+  transform: translateX(3px);
 }
 
 /* Tabs & Dual Feed */
@@ -632,25 +664,35 @@
   border-radius: 10px;
   border: 1px solid var(--border);
 }
+button.admin-feed-tab-btn,
 .admin-feed-tab-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 14px;
-  min-height: 36px;
-  border-radius: 7px;
+  padding: 8px 16px;
+  min-height: 40px;
+  border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  color: var(--text-secondary) !important;
   cursor: pointer;
   transition: all 0.15s ease;
 }
-.admin-feed-tab-btn--active {
-  background: var(--surface);
-  color: var(--action);
-  box-shadow: 0 1px 4px rgba(17, 27, 53, 0.08);
+button.admin-feed-tab-btn:hover:not(:disabled),
+.admin-feed-tab-btn:hover {
+  background: #ffffff !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+button.admin-feed-tab-btn--active,
+.admin-feed-tab-btn--active,
+button.admin-feed-tab-btn--active:hover:not(:disabled) {
+  background: #ffffff !important;
+  border-color: var(--border) !important;
+  color: var(--action) !important;
+  box-shadow: 0 2px 6px rgba(17, 27, 53, 0.08) !important;
 }
 .admin-tx-badge {
   display: inline-block;
