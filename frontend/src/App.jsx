@@ -265,7 +265,7 @@ export default function App() {
     >
       <Notice error>{error}</Notice>
       {isAdmin ? (
-        <Page key={page} audit={page === 'audit'} currentUser={user} />
+        <Page key={page} audit={page === 'audit'} currentUser={user} onNavigate={setPage} />
       ) : (
         <>
           <PageHeader

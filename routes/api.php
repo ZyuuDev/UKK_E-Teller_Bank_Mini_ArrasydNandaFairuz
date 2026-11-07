@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MemberController;
 use App\Http\Controllers\Admin\ReconciliationController;
 use App\Http\Controllers\Admin\SaverController;
@@ -120,6 +121,7 @@ Route::middleware(['idle', 'auth:sanctum', 'account'])->group(function () {
     Route::get('reports/export', [TransactionReportController::class, 'export'])->middleware(['role:admin,teller', 'throttle:10,1']);
 
     Route::prefix('admin')->middleware('role:admin')->group(function () {
+        Route::get('dashboard-stats', [DashboardController::class, 'stats']);
         Route::get('users', [UserController::class, 'index']);
         Route::post('users', [UserController::class, 'store']);
         Route::patch('users/{user}', [UserController::class, 'update']);
