@@ -362,11 +362,12 @@
   justify-content: space-between;
   gap: 10px;
   min-width: 0;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
 }
 .admin-kpi-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgb(17 27 53 / 0.06);
+  transform: translateY(-3px);
+  border-color: rgba(22, 119, 255, 0.3);
+  box-shadow: 0 10px 24px -4px rgba(17, 27, 53, 0.08), 0 4px 8px -2px rgba(17, 27, 53, 0.04);
 }
 .admin-kpi-card__top {
   display: flex;
@@ -519,9 +520,23 @@
   flex: 1;
   max-width: 18px;
   border-radius: 4px 4px 0 0;
-  transition: height 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease;
   min-height: 4px;
+  transform-origin: bottom;
+  animation: admin-bar-grow 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: opacity 0.15s ease, filter 0.15s ease;
 }
+
+@keyframes admin-bar-grow {
+  from {
+    transform: scaleY(0);
+    opacity: 0.2;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
 .admin-bar--deposit {
   background: linear-gradient(180deg, #34d399 0%, #059669 100%);
 }
@@ -529,7 +544,8 @@
   background: linear-gradient(180deg, #f87171 0%, #dc2626 100%);
 }
 .admin-bar:hover {
-  opacity: 0.85;
+  opacity: 0.9;
+  filter: brightness(1.1);
 }
 .admin-chart-label {
   font-size: 11px;
@@ -638,6 +654,10 @@ button.admin-quick-btn:hover:not(:disabled) .admin-quick-btn__arrow,
   color: var(--brand) !important;
   transform: translateX(3px);
 }
+button.admin-quick-btn:active:not(:disabled),
+.admin-quick-btn:active {
+  transform: scale(0.98) translateX(2px) !important;
+}
 
 /* Tabs & Dual Feed */
 .admin-feed-panel {
@@ -686,6 +706,10 @@ button.admin-feed-tab-btn:hover:not(:disabled),
   border-color: var(--border) !important;
   color: var(--text) !important;
 }
+button.admin-feed-tab-btn:active:not(:disabled),
+.admin-feed-tab-btn:active {
+  transform: scale(0.97) !important;
+}
 button.admin-feed-tab-btn--active,
 .admin-feed-tab-btn--active,
 button.admin-feed-tab-btn--active:hover:not(:disabled) {
@@ -693,6 +717,19 @@ button.admin-feed-tab-btn--active:hover:not(:disabled) {
   border-color: var(--border) !important;
   color: var(--action) !important;
   box-shadow: 0 2px 6px rgba(17, 27, 53, 0.08) !important;
+}
+.admin-feed-panel__content {
+  animation: admin-tab-fade 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes admin-tab-fade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .admin-tx-badge {
   display: inline-block;

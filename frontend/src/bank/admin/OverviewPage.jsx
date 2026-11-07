@@ -249,7 +249,7 @@ export default function OverviewPage({ onNavigate }) {
 
             {trend.length > 0 ? (
               <div className="admin-bar-chart" role="img" aria-label="Grafik Batang Transaksi 7 Hari">
-                {trend.map((day) => {
+                {trend.map((day, idx) => {
                   const depositHeight = Math.max(
                     Math.round((day.deposits / maxTrendVal) * 100),
                     day.deposits > 0 ? 8 : 2
@@ -268,11 +268,17 @@ export default function OverviewPage({ onNavigate }) {
                       <div className="admin-chart-bars">
                         <div
                           className="admin-bar admin-bar--deposit"
-                          style={{ height: `${depositHeight}%` }}
+                          style={{
+                            height: `${depositHeight}%`,
+                            animationDelay: `${idx * 45}ms`,
+                          }}
                         />
                         <div
                           className="admin-bar admin-bar--withdrawal"
-                          style={{ height: `${withdrawalHeight}%` }}
+                          style={{
+                            height: `${withdrawalHeight}%`,
+                            animationDelay: `${idx * 45 + 20}ms`,
+                          }}
                         />
                       </div>
                       <span className="admin-chart-label">{day.label}</span>
@@ -424,7 +430,8 @@ export default function OverviewPage({ onNavigate }) {
             </div>
           </div>
 
-          {activeTab === 'transactions' ? (
+          <div key={activeTab} className="admin-feed-panel__content">
+            {activeTab === 'transactions' ? (
             <DataTable
               caption="Lima transaksi tabungan terbaru"
               rows={recentTransactions}
@@ -588,6 +595,7 @@ export default function OverviewPage({ onNavigate }) {
               ]}
             />
           )}
+          </div>
         </section>
       </ResourceState>
     </>

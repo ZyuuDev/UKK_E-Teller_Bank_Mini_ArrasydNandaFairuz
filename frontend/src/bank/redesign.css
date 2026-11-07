@@ -202,7 +202,11 @@
 .bank-button {
   transition:
     background var(--duration-fast),
-    border-color var(--duration-fast);
+    border-color var(--duration-fast),
+    transform 0.1s ease;
+}
+.bank-button:active:not(:disabled) {
+  transform: scale(0.975);
 }
 button.bank-button--primary {
   background: var(--action);
@@ -610,12 +614,29 @@ button.bank-button--danger:hover:not(:disabled) {
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
   .bank-overlay[open],
   .bank-spin,
-  .bank-skeleton span {
-    animation: none;
+  .bank-skeleton span,
+  .admin-bar,
+  .admin-feed-panel__content,
+  .lp-navbar-floating {
+    animation: none !important;
   }
-  .bank-button {
-    transition: none;
+  .bank-button,
+  .admin-kpi-card,
+  .admin-quick-btn,
+  .admin-feed-tab-btn,
+  .lp-card,
+  .lp-step-card,
+  .lp-security-card {
+    transition: none !important;
+    transform: none !important;
   }
 }
