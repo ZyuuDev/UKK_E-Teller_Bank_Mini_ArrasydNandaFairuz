@@ -119,7 +119,7 @@ export default function ImportPage() {
           <form className="bank-form admin-upload" onSubmit={upload}>
             <FormField
               label="Pilih file CSV atau XLSX"
-              hint="Kolom: student_number, full_name, graduation_year, major (opsional)."
+              hint="Urutan kolom wajib pada file: Nomor Induk Siswa (NIS), Nama Lengkap, Tahun Lulus, dan Jurusan (opsional)."
             >
               <Input
                 name="file"

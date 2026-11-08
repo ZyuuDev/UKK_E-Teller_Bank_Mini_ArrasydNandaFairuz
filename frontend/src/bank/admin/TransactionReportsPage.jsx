@@ -106,7 +106,7 @@ export default function TransactionReportsPage({ isAdmin }) {
     setBusy(true)
     setError('')
     try {
-      setReceipt((await api(`/teller/transactions/${row.id}`)).data)
+      setReceipt((await api(`/reports/transactions/${row.id}`)).data)
     } catch (failure) {
       setError(failure.message)
     } finally {
@@ -210,19 +210,15 @@ export default function TransactionReportsPage({ isAdmin }) {
             ['amount', 'Nominal', 'money'],
             ['balance_after', 'Saldo sesudah', 'money'],
           ]}
-          actions={
-            !isAdmin
-              ? (row) => (
-                  <Button
-                    variant="secondary"
-                    disabled={busy}
-                    onClick={() => openReceipt(row)}
-                  >
-                    Bukti / cetak ulang
-                  </Button>
-                )
-              : undefined
-          }
+          actions={(row) => (
+            <Button
+              variant="secondary"
+              disabled={busy}
+              onClick={() => openReceipt(row)}
+            >
+              Bukti / cetak ulang
+            </Button>
+          )}
         />
         <Pager data={list.data?.transactions} page={page} onChange={setPage} />
       </ResourceState>

@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
@@ -44,6 +45,27 @@ class UserController extends Controller
             $audit->record($request->user()->id, 'staff.updated', 'user', $user->id, $data);
         });
         return response()->json(['data' => $user]);
+    }
+
+    public function credentials(Request $request, User $user, AuditService $audit)
+    {
+        abort_unless(in_array($user->role, ['admin', 'teller'], true), 404);
+        abort_if($user->id === $request->user()->id, 422, 'Gunakan menu Kelola akun untuk mengganti password sendiri.');
+        $result = DB::transaction(function () use ($request, $user, $audit) {
+            $locked = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
+            $password = Str::password(16);
+            $locked->update(['password' => $password, 'must_change_password' => true]);
+            DB::table('access_codes')->where('user_id', $locked->id)->delete();
+            $locked->tokens()->delete();
+            $audit->record($request->user()->id, 'staff.credentials_issued', 'user', $locked->id, ['role' => $locked->role]);
+            return [
+                'username' => $locked->username,
+                'name' => $locked->name,
+                'role' => $locked->role,
+                'temporary_password' => $password,
+            ];
+        });
+        return response()->json(['data' => $result]);
     }
 
     public function studentAccess(Request $request, User $user, AuditService $audit)

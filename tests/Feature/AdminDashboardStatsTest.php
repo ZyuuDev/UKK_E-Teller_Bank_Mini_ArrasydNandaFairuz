@@ -96,5 +96,25 @@ class AdminDashboardStatsTest extends TestCase
                 ],
             ]);
     }
+
+    public function test_admin_can_issue_staff_temporary_credentials_and_filter_ledger(): void
+    {
+        Sanctum::actingAs($this->admin);
+
+        $credResponse = $this->postJson("/api/admin/users/{$this->teller->id}/credentials");
+        $credResponse->assertStatus(200)
+            ->assertJsonStructure([
+                'data' => ['username', 'name', 'role', 'temporary_password'],
+            ]);
+
+        $this->assertTrue($this->teller->fresh()->must_change_password);
+
+        $journalResponse = $this->getJson('/api/admin/journals?account_code=101&entry_type=Debit');
+        $journalResponse->assertStatus(200);
+
+        $auditResponse = $this->getJson('/api/admin/audit-logs?action=staff.&role=admin');
+        $auditResponse->assertStatus(200);
+        $this->assertGreaterThanOrEqual(1, count($auditResponse->json('data.data')));
+    }
 }
 

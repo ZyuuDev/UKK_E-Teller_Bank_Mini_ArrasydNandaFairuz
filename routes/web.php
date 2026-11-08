@@ -19,7 +19,7 @@ Route::withoutMiddleware([
     \Illuminate\Session\Middleware\StartSession::class,
     \Illuminate\View\Middleware\ShareErrorsFromSession::class,
     \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
-])->group(function () {
+])->middleware('throttle:5,1')->group(function () {
     Route::get('/debug-test', function () {
         abort_unless(config('app.debug'), 404);
 

@@ -54,13 +54,56 @@ class ReconciliationController extends Controller
         return response()->json(['data' => $sessions->rejectCashRequest($id, $request->user()->id, $data['reason'])]);
     }
 
-    public function journals()
+    public function journals(Request $request)
     {
-        return response()->json(['data' => DB::table('journal_entries')->orderByDesc('id')->paginate(50)]);
+        $request->validate([
+            'q' => 'nullable|string|max:100',
+            'account_code' => 'nullable|string|max:20',
+            'entry_type' => 'nullable|in:Debit,Credit',
+            'date' => 'nullable|date_format:Y-m-d',
+        ]);
+
+        $query = DB::table('journal_entries')->orderByDesc('id');
+
+        if ($request->filled('q')) {
+            $raw = trim((string) $request->q);
+            $num = preg_replace('/[^0-9]/', '', $raw);
+            $query->where(function ($q) use ($raw, $num) {
+                $q->where('account_code', 'like', '%' . $raw . '%');
+                if ($num !== '') {
+                    $q->orWhere('id', (int) $num)
+                        ->orWhere('transaction_id', (int) $num)
+                        ->orWhere('cash_transfer_id', (int) $num)
+                        ->orWhere('cash_session_id', (int) $num);
+                }
+            });
+        }
+
+        if ($request->filled('account_code')) {
+            $query->where('account_code', $request->account_code);
+        }
+
+        if ($request->filled('entry_type')) {
+            $query->where('entry_type', $request->entry_type);
+        }
+
+        if ($request->filled('date')) {
+            $query->whereDate('created_at', $request->date);
+        }
+
+        return response()->json(['data' => $query->paginate(50)]);
     }
 
     public function audit(Request $request)
     {
+        $request->validate([
+            'q' => 'nullable|string|max:100',
+            'search' => 'nullable|string|max:100',
+            'action' => 'nullable|string|max:100',
+            'role' => 'nullable|in:admin,teller,student',
+            'date' => 'nullable|date_format:Y-m-d',
+        ]);
+
         $query = DB::table('audit_logs')
             ->leftJoin('users', 'audit_logs.actor_id', '=', 'users.id')
             ->select([
@@ -77,18 +120,31 @@ class ReconciliationController extends Controller
             ])
             ->orderByDesc('audit_logs.id');
 
-        if ($request->filled('search')) {
-            $search = '%' . $request->search . '%';
-            $query->where(function ($q) use ($search) {
+        $keyword = trim((string) ($request->q ?: $request->search ?: ''));
+        if ($keyword !== '') {
+            $search = '%' . $keyword . '%';
+            $query->where(function ($q) use ($search, $keyword) {
                 $q->where('users.name', 'like', $search)
                     ->orWhere('users.username', 'like', $search)
                     ->orWhere('audit_logs.action', 'like', $search)
                     ->orWhere('audit_logs.subject_type', 'like', $search);
+                if (ctype_digit($keyword)) {
+                    $q->orWhere('audit_logs.id', (int) $keyword)
+                        ->orWhere('audit_logs.subject_id', (int) $keyword);
+                }
             });
         }
 
         if ($request->filled('action')) {
-            $query->where('audit_logs.action', $request->action);
+            $query->where('audit_logs.action', 'like', $request->action . '%');
+        }
+
+        if ($request->filled('role')) {
+            $query->where('users.role', $request->role);
+        }
+
+        if ($request->filled('date')) {
+            $query->whereDate('audit_logs.created_at', $request->date);
         }
 
         return response()->json(['data' => $query->paginate(50)]);

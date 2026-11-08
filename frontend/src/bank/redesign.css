@@ -275,6 +275,47 @@ button.bank-button--danger:hover:not(:disabled) {
 .bank-search__input > input {
   padding-left: 40px;
 }
+.bank-password-field {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+.bank-password-field > input {
+  width: 100%;
+  padding-right: 44px;
+}
+button.bank-password-toggle,
+.bank-password-toggle {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: none !important;
+  background: transparent !important;
+  color: var(--text-secondary) !important;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: none !important;
+}
+button.bank-password-toggle:hover:not(:disabled),
+.bank-password-toggle:hover {
+  background: var(--surface-alt) !important;
+  color: var(--action) !important;
+}
+.bank-detail-list--nested {
+  margin-top: 8px;
+  padding: 12px 14px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+}
 .bank-checkbox {
   display: flex;
   align-items: flex-start;

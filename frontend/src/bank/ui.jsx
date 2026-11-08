@@ -1,5 +1,5 @@
-import { cloneElement, isValidElement, useEffect, useId, useRef } from 'react'
-import { LoaderCircle, Search, X } from 'lucide-react'
+import { cloneElement, isValidElement, useEffect, useId, useRef, useState } from 'react'
+import { Eye, EyeOff, LoaderCircle, Search, X } from 'lucide-react'
 import { money } from './api'
 
 const labels = {
@@ -36,6 +36,7 @@ export const ACTION_LABELS = {
   'student.pin_reset': 'Reset Mandiri PIN Siswa',
   'staff.created': 'Pendaftaran Petugas Baru',
   'staff.updated': 'Pembaruan Data Petugas',
+  'staff.credentials_issued': 'Reset Password Sementara Petugas',
   'student.access_changed': 'Perubahan Hak Akses Siswa',
   'service_status.updated': 'Pembaruan Status Layanan Loket',
   'member.created': 'Pendaftaran Data Siswa',
@@ -70,6 +71,13 @@ export const ROLE_LABELS = {
   student: 'Siswa Penabung',
 }
 
+export const ACCOUNT_CODE_LABELS = {
+  '101': '101 · Kas Tunai Loket',
+  '102': '102 · Kas Brankas Utama',
+  '201': '201 · Tabungan Nasabah Siswa',
+  '301': '301 · Modal & Penyesuaian Kas',
+}
+
 export const DETAIL_FIELD_LABELS = {
   id: 'ID Data',
   actor_id: 'ID Petugas / Pelaku',
@@ -87,7 +95,7 @@ export const DETAIL_FIELD_LABELS = {
   discrepancy: 'Selisih Kas',
   amount: 'Nominal Transaksi',
   type: 'Jenis Transaksi',
-  request_id: 'ID Permintaan Unik',
+  request_id: 'ID Referensi Permintaan',
   reason: 'Alasan',
   rejection_reason: 'Catatan Penolakan / Keterangan Sistem',
   rejection_notes: 'Catatan Penolakan',
@@ -95,14 +103,39 @@ export const DETAIL_FIELD_LABELS = {
   cash_session_id: 'ID Sesi Kas',
   cash_transfer_id: 'ID Serah Terima Kas',
   daily_reconciliation_id: 'ID Rekonsiliasi Kas',
+  transaction_id: 'ID Transaksi',
   teller_id: 'ID Teller',
-  account_code: 'Kode Akun Akuntansi',
+  account_code: 'Akun Buku Besar',
   entry_type: 'Posisi Buku Besar (Debit/Kredit)',
   balance_after: 'Saldo Setelah Transaksi',
   snapshot_account_number: 'Nomor Rekening',
   snapshot_member_name: 'Nama Siswa',
+  account_number: 'Nomor Rekening',
+  student_number: 'Nomor Induk Siswa (NIS)',
+  full_name: 'Nama Lengkap Siswa',
+  graduation_year: 'Tahun Lulus',
+  major: 'Jurusan',
+  name: 'Nama Lengkap',
+  username: 'Username',
+  role: 'Peran Akun',
+  by_role: 'Dilakukan Oleh Peran',
+  is_active: 'Status Akses Layanan',
+  before: 'Data Sebelum Perubahan',
+  after: 'Data Sesudah Perubahan',
+  closing_time: 'Jam Penutupan',
+  auto_closed: 'Ditutup Otomatis Sistem',
+  created: 'Data Baru Ditambahkan',
+  skipped: 'Data Duplikat Dilewati',
+  invalid: 'Data Tidak Valid',
+  processed: 'Baris Diproses',
+  total: 'Total Baris',
   date: 'Tanggal',
   status: 'Status',
+}
+
+export function formatAccountCode(code) {
+  if (!code) return 'Tidak tersedia'
+  return ACCOUNT_CODE_LABELS[String(code)] || `${code} · Akun Buku Besar`
 }
 
 export function formatAction(action) {
@@ -150,6 +183,87 @@ export function UserRoleBadge({ role }) {
   )
 }
 
+const MONEY_KEYS = new Set([
+  'opening_balance',
+  'expected_closing_balance',
+  'actual_cash_on_hand',
+  'discrepancy',
+  'amount',
+  'balance_after',
+])
+
+export function formatDetailValue(key, value) {
+  if (value === null || value === undefined || value === '') return 'Tidak tersedia'
+  if (typeof value === 'boolean') {
+    if (key === 'is_active') return value ? 'Aktif' : 'Nonaktif'
+    return value ? 'Ya' : 'Tidak'
+  }
+  if (MONEY_KEYS.has(key) && typeof value === 'number') {
+    return money(value)
+  }
+  if (key === 'action') return <AuditActionBadge action={value} />
+  if (key === 'subject_type') return formatSubject(value)
+  if (key === 'actor_role' || key === 'role' || key === 'by_role') {
+    return <UserRoleBadge role={value} />
+  }
+  if (key === 'account_code') return formatAccountCode(value)
+  if (key === 'type' || key === 'transaction_type') {
+    if (value === 'Deposit') return 'Setoran Tunai'
+    if (value === 'Withdrawal') return 'Penarikan Tunai'
+    return String(value)
+  }
+  if (key === 'status') return <Status value={value} />
+  if ((key === 'created_at' || key === 'updated_at') && value) {
+    return new Date(value).toLocaleString('id-ID', {
+      timeZone: 'Asia/Jakarta',
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    })
+  }
+  return String(value)
+}
+
+export function HumanDetail({ value }) {
+  if (value === null || value === undefined || value === '') {
+    return <span className="muted">Tidak ada rincian tambahan</span>
+  }
+  let parsed = value
+  if (typeof value === 'string') {
+    try {
+      parsed = JSON.parse(value)
+    } catch {
+      return <span>{value}</span>
+    }
+  }
+  if (typeof parsed !== 'object' || parsed === null) {
+    return <span>{String(parsed)}</span>
+  }
+  const entries = Object.entries(parsed)
+  if (!entries.length) {
+    return <span className="muted">Tidak ada rincian tambahan</span>
+  }
+  return (
+    <dl className="bank-detail-list bank-detail-list--nested">
+      {entries.map(([key, item]) => (
+        <div key={key} className="bank-detail-row">
+          <dt>{formatDetailLabel(key)}</dt>
+          <dd>
+            {typeof item === 'object' && item !== null ? (
+              <HumanDetail value={item} />
+            ) : (
+              formatDetailValue(key, item)
+            )}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
 export function Button({
   variant = 'primary',
   busy = false,
@@ -173,8 +287,30 @@ export function Button({
   )
 }
 
-export function Input(props) {
-  return <input {...props} />
+export function Input({ type = 'text', ...props }) {
+  const [visible, setVisible] = useState(false)
+  if (type === 'password') {
+    return (
+      <span className="bank-password-field">
+        <input
+          {...props}
+          type={visible ? 'text' : 'password'}
+          data-password="true"
+        />
+        <button
+          type="button"
+          className="bank-password-toggle"
+          onClick={() => setVisible((current) => !current)}
+          disabled={props.disabled}
+          aria-label={visible ? 'Sembunyikan sandi' : 'Tampilkan sandi'}
+          title={visible ? 'Sembunyikan sandi' : 'Tampilkan sandi'}
+        >
+          {visible ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
+        </button>
+      </span>
+    )
+  }
+  return <input type={type} {...props} />
 }
 export function Select({ children, ...props }) {
   return <select {...props}>{children}</select>
@@ -419,7 +555,7 @@ export function DataTable({ rows, columns, actions, caption = 'Daftar data' }) {
                   ) : typeof row[key] === 'object' && row[key] !== null ? (
                     <details>
                       <summary>Lihat rincian</summary>
-                      <pre>{JSON.stringify(row[key], null, 2)}</pre>
+                      <HumanDetail value={row[key]} />
                     </details>
                   ) : (
                     (row[key] ?? 'Belum diisi')

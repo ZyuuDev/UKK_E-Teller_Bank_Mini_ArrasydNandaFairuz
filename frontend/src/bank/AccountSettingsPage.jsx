@@ -29,7 +29,7 @@ export default function AccountSettingsPage({ user, onUserChange, onBusyChange }
     } catch (failure) {
       setError(failure.message)
     } finally {
-      form.querySelectorAll('input[type="password"]').forEach((input) => {
+      form.querySelectorAll('input[type="password"], input[data-password="true"]').forEach((input) => {
         input.value = ''
       })
       setBusy(false)

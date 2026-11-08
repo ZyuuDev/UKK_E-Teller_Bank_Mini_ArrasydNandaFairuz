@@ -94,6 +94,14 @@ class TransactionReportController extends Controller
         return response()->json(['data' => $data])->header('Cache-Control', 'private, no-store');
     }
 
+    public function receipt(Request $request, Transaction $transaction)
+    {
+        $user = $request->user();
+        abort_unless(in_array($user->role, ['admin', 'teller'], true), 403);
+        abort_unless($user->role === 'admin' || $transaction->teller_id === $user->id, 404);
+        return response()->json(['data' => $transaction->receipt()])->header('Cache-Control', 'private, no-store');
+    }
+
     private function csvText(?string $value): string
     {
         $value = $value ?? '';

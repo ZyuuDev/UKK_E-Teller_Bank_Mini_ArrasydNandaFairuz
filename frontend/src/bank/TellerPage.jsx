@@ -20,6 +20,19 @@ import QrScanner from '../components/QrScanner'
 import { printReceipt } from './printing'
 import './teller.css'
 
+const QUICK_TX_DENOMS = [10000, 20000, 50000, 100000, 200000, 500000]
+const QUICK_CASH_DENOMS = [250000, 500000, 1000000, 2000000]
+
+function MoneyPreview({ value }) {
+  const num = Number(value)
+  if (!Number.isFinite(num) || num <= 0) return null
+  return (
+    <span className="teller-money-preview" aria-live="polite">
+      Nominal terbaca: {money(num)}
+    </span>
+  )
+}
+
 function readPending(tellerId) {
   try {
     return JSON.parse(sessionStorage.getItem(`bank-pending:${tellerId}`) || 'null')
@@ -394,7 +407,7 @@ function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
                 )}
                 <FormField
                   label="Nominal rupiah"
-                  hint="Masukkan angka bulat tanpa titik atau koma."
+                  hint="Masukkan angka bulat atau pilih nominal cepat di bawah."
                 >
                   <Input
                     type="number"
@@ -409,6 +422,27 @@ function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
                     required
                   />
                 </FormField>
+                <div>
+                  <div className="teller-denom-chips" role="group" aria-label="Pilihan nominal cepat">
+                    {QUICK_TX_DENOMS.map((denom) => {
+                      const active = Number(tx.draft.amount) === denom
+                      return (
+                        <button
+                          key={denom}
+                          type="button"
+                          disabled={tx.busy || !canCreate}
+                          className={`teller-denom-chip ${active ? 'teller-denom-chip--active' : ''}`}
+                          onClick={() =>
+                            tx.setDraft({ ...tx.draft, amount: String(denom) })
+                          }
+                        >
+                          {money(denom)}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <MoneyPreview value={tx.draft.amount} />
+                </div>
                 {tx.found.saver && (
                   <FormField label="Catatan (opsional)">
                     <Input
@@ -525,6 +559,7 @@ function OpenSession({ sessions, blocked, onChanged }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [openingInput, setOpeningInput] = useState('')
   const [showCashRequestModal, setShowCashRequestModal] = useState(false)
   const [requestAmount, setRequestAmount] = useState('')
   const [requestNotes, setRequestNotes] = useState('')
@@ -590,6 +625,8 @@ function OpenSession({ sessions, blocked, onChanged }) {
             min={0}
             max={1000000000000}
             step={1}
+            value={openingInput}
+            onChange={(event) => setOpeningInput(event.target.value)}
             required
             disabled={busy || blocked}
           />
@@ -611,6 +648,22 @@ function OpenSession({ sessions, blocked, onChanged }) {
           )}
         </div>
       </form>
+      <div style={{ marginTop: '-12px', marginBottom: '20px' }}>
+        <div className="teller-denom-chips" role="group" aria-label="Pilihan modal cepat">
+          {QUICK_CASH_DENOMS.map((denom) => (
+            <button
+              key={denom}
+              type="button"
+              disabled={busy || blocked}
+              className={`teller-denom-chip ${Number(openingInput) === denom ? 'teller-denom-chip--active' : ''}`}
+              onClick={() => setOpeningInput(String(denom))}
+            >
+              {money(denom)}
+            </button>
+          ))}
+        </div>
+        <MoneyPreview value={openingInput} />
+      </div>
 
       <div className="bank-panel__head teller-gap">
         <h3>Pengajuan tambahan kas hari ini</h3>
@@ -675,6 +728,22 @@ function OpenSession({ sessions, blocked, onChanged }) {
               placeholder="Contoh: 500000"
             />
           </FormField>
+          <div>
+            <div className="teller-denom-chips" role="group" aria-label="Pilihan tambahan kas cepat">
+              {QUICK_CASH_DENOMS.map((denom) => (
+                <button
+                  key={denom}
+                  type="button"
+                  disabled={requestBusy}
+                  className={`teller-denom-chip ${Number(requestAmount) === denom ? 'teller-denom-chip--active' : ''}`}
+                  onClick={() => setRequestAmount(String(denom))}
+                >
+                  {money(denom)}
+                </button>
+              ))}
+            </div>
+            <MoneyPreview value={requestAmount} />
+          </div>
           <FormField label="Alasan pengajuan kas">
             <Input
               value={requestNotes}
@@ -813,6 +882,7 @@ function CloseSession({ sessions, pending, onChanged }) {
                       disabled={busy}
                     />
                   </FormField>
+                  <MoneyPreview value={cash} />
                   <Button type="submit" disabled={busy || !cash}>
                     Lanjutkan ke pemeriksaan tutup kas
                   </Button>
@@ -904,59 +974,39 @@ export default function TellerPage({ tellerId }) {
   ]
   return (
     <>
-      <div
-        className="teller-session-strip"
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '0.75rem',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-          <span>
-            Sesi hari ini:{' '}
+      <div className="teller-session-strip">
+        <div className="teller-session-strip__left">
+          <span className="teller-session-strip__meta">
+            <span>Sesi hari ini:</span>
             {sessions.loading ? (
-              'memeriksa...'
+              <span>memeriksa...</span>
             ) : sessions.error ? (
-              'belum dapat diperiksa'
+              <span>belum dapat diperiksa</span>
             ) : current ? (
               <Status value={current.status} />
             ) : (
-              'belum dibuka'
+              <span>belum dibuka</span>
             )}
           </span>
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              background: 'var(--bank-surface-muted, #f1f5f9)',
-              padding: '0.2rem 0.35rem',
-              borderRadius: '8px',
-            }}
-          >
-            <span style={{ fontSize: '0.8rem', fontWeight: 600, paddingLeft: '0.25rem' }}>
-              Status loket:
-            </span>
+          <div className="teller-status-switcher" role="group" aria-label="Status operasional loket">
+            <span className="teller-status-switcher__label">Status loket:</span>
             <Button
               variant={activeStatus === 'buka' ? 'primary' : 'secondary'}
-              style={activeStatus === 'buka' ? { background: '#16a34a', borderColor: '#16a34a' } : {}}
+              className={`teller-status-btn ${activeStatus === 'buka' ? 'teller-status-btn--buka' : ''}`}
               onClick={() => updateStatus('buka')}
             >
               Buka
             </Button>
             <Button
               variant={activeStatus === 'istirahat' ? 'primary' : 'secondary'}
-              style={activeStatus === 'istirahat' ? { background: '#d97706', borderColor: '#d97706' } : {}}
+              className={`teller-status-btn ${activeStatus === 'istirahat' ? 'teller-status-btn--istirahat' : ''}`}
               onClick={() => updateStatus('istirahat')}
             >
               Istirahat
             </Button>
             <Button
               variant={activeStatus === 'tutup' ? 'primary' : 'secondary'}
-              style={activeStatus === 'tutup' ? { background: '#dc2626', borderColor: '#dc2626' } : {}}
+              className={`teller-status-btn ${activeStatus === 'tutup' ? 'teller-status-btn--tutup' : ''}`}
               onClick={() => updateStatus('tutup')}
             >
               Tutup
@@ -975,6 +1025,39 @@ export default function TellerPage({ tellerId }) {
           </Button>
         </div>
       </div>
+
+      {current && (
+        <section className="teller-kpi-grid" aria-label="Ringkasan kas loket hari ini">
+          <div className="teller-kpi-card">
+            <span className="teller-kpi-card__label">Modal Kas Awal</span>
+            <strong className="teller-kpi-card__value">{money(current.opening_balance)}</strong>
+            <span className="teller-kpi-card__sub">
+              Tambahan disetujui: {money(current.total_additional_cash || 0)}
+            </span>
+          </div>
+          <div className="teller-kpi-card">
+            <span className="teller-kpi-card__label">Setoran Masuk Hari Ini</span>
+            <strong className="teller-kpi-card__value teller-kpi-card__value--in">
+              +{money(current.total_deposits || 0)}
+            </strong>
+            <span className="teller-kpi-card__sub">Uang masuk ke laci</span>
+          </div>
+          <div className="teller-kpi-card">
+            <span className="teller-kpi-card__label">Penarikan Keluar Hari Ini</span>
+            <strong className="teller-kpi-card__value teller-kpi-card__value--out">
+              -{money(current.total_withdrawals || 0)}
+            </strong>
+            <span className="teller-kpi-card__sub">Uang keluar dari laci</span>
+          </div>
+          <div className="teller-kpi-card">
+            <span className="teller-kpi-card__label">Kas Sistem di Laci Saat Ini</span>
+            <strong className="teller-kpi-card__value teller-kpi-card__value--primary">
+              {money(current.expected_closing_balance)}
+            </strong>
+            <span className="teller-kpi-card__sub">Patokan saldo kas loket</span>
+          </div>
+        </section>
+      )}
       {statusMessage && <Notice>{statusMessage}</Notice>}
       {tx.pending && area !== 'transaction' && (
         <Notice>

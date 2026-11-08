@@ -118,6 +118,7 @@ Route::middleware(['idle', 'auth:sanctum', 'account'])->group(function () {
     Route::post('auth/email/verify', [RecoveryController::class, 'verifyEmail'])->middleware('throttle:10,1');
 
     Route::get('reports/transactions', [TransactionReportController::class, 'index'])->middleware('role:admin,teller');
+    Route::get('reports/transactions/{transaction}', [TransactionReportController::class, 'receipt'])->middleware('role:admin,teller');
     Route::get('reports/export', [TransactionReportController::class, 'export'])->middleware(['role:admin,teller', 'throttle:10,1']);
 
     Route::prefix('admin')->middleware('role:admin')->group(function () {
@@ -125,6 +126,7 @@ Route::middleware(['idle', 'auth:sanctum', 'account'])->group(function () {
         Route::get('users', [UserController::class, 'index']);
         Route::post('users', [UserController::class, 'store']);
         Route::patch('users/{user}', [UserController::class, 'update']);
+        Route::post('users/{user}/credentials', [UserController::class, 'credentials'])->middleware('throttle:5,1');
         Route::patch('student-access/{user}', [UserController::class, 'studentAccess']);
         Route::get('members', [MemberController::class, 'index']);
         Route::post('members', [MemberController::class, 'store']);
