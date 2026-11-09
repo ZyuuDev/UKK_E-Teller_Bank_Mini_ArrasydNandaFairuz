@@ -15,7 +15,9 @@
 /auth.json
 /node_modules
 /public/build
-/public/download
+/public/download/*
+!/public/download/BankMini-SKANSABA.apk
+!/public/download/siswa-smkn1bantul-siap-impor.csv
 /public/fonts-manifest.dev.json
 /public/hot
 /public/storage

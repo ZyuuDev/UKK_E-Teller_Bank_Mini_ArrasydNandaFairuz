@@ -6,11 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Transaction extends Model
 {
-    protected $fillable = ['saver_id', 'teller_id', 'cash_session_id', 'request_id', 'transaction_type', 'amount', 'date', 'notes', 'balance_after', 'snapshot_account_number', 'snapshot_member_name'];
+    protected $fillable = ['saver_id', 'teller_id', 'cash_session_id', 'request_id', 'transaction_type', 'amount', 'date', 'notes', 'withdrawal_appointment_id', 'balance_after', 'snapshot_account_number', 'snapshot_member_name'];
 
     protected function casts(): array
     {
-        return ['saver_id' => 'integer', 'teller_id' => 'integer', 'amount' => 'integer', 'balance_after' => 'integer', 'date' => 'date'];
+        return ['saver_id' => 'integer', 'teller_id' => 'integer', 'withdrawal_appointment_id' => 'integer', 'amount' => 'integer', 'balance_after' => 'integer', 'date' => 'date'];
     }
 
     public function saver()
@@ -21,6 +21,11 @@ class Transaction extends Model
     public function teller()
     {
         return $this->belongsTo(User::class, 'teller_id');
+    }
+
+    public function appointment()
+    {
+        return $this->belongsTo(WithdrawalAppointment::class, 'withdrawal_appointment_id');
     }
 
     public function receipt(): array

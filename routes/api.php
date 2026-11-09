@@ -13,6 +13,7 @@ use App\Http\Controllers\Student\AccountController;
 use App\Http\Controllers\Teller\CashSessionController;
 use App\Http\Controllers\Teller\TransactionController;
 use App\Http\Controllers\TransactionReportController;
+use App\Http\Controllers\WithdrawalAppointmentController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Http\Request;
@@ -146,6 +147,9 @@ Route::middleware(['idle', 'auth:sanctum', 'account'])->group(function () {
         Route::post('cash-requests/{id}/reject', [ReconciliationController::class, 'rejectCashRequest']);
         Route::get('journals', [ReconciliationController::class, 'journals']);
         Route::get('audit-logs', [ReconciliationController::class, 'audit']);
+        Route::get('appointments', [WithdrawalAppointmentController::class, 'adminIndex']);
+        Route::post('appointments/{appointment}/approve', [WithdrawalAppointmentController::class, 'adminApprove']);
+        Route::post('appointments/{appointment}/reject', [WithdrawalAppointmentController::class, 'adminReject']);
     });
 
     Route::prefix('teller')->middleware('role:teller')->group(function () {
@@ -154,6 +158,8 @@ Route::middleware(['idle', 'auth:sanctum', 'account'])->group(function () {
         Route::post('deposit', [TransactionController::class, 'deposit'])->middleware('throttle:30,1');
         Route::post('withdraw', [TransactionController::class, 'withdraw'])->middleware('throttle:5,1');
         Route::post('reset-pin', [TransactionController::class, 'resetPin']);
+        Route::get('appointments', [WithdrawalAppointmentController::class, 'tellerIndex']);
+        Route::post('appointments', [WithdrawalAppointmentController::class, 'tellerStore']);
         Route::get('transactions/by-request/{requestId}', [TransactionController::class, 'byRequest']);
         Route::get('transactions/{transaction}', [TransactionController::class, 'receipt']);
         Route::get('service-status', [CashSessionController::class, 'serviceStatus']);
@@ -169,6 +175,9 @@ Route::middleware(['idle', 'auth:sanctum', 'account'])->group(function () {
     Route::prefix('student')->middleware('role:student')->group(function () {
         Route::get('profile', [AccountController::class, 'profile']);
         Route::get('mutations', [AccountController::class, 'mutations']);
+        Route::get('withdrawal-limits', [WithdrawalAppointmentController::class, 'studentLimits']);
+        Route::get('appointments', [WithdrawalAppointmentController::class, 'studentIndex']);
+        Route::post('appointments', [WithdrawalAppointmentController::class, 'studentStore']);
         Route::post('email/request', [RecoveryController::class, 'requestVerification'])->middleware('throttle:5,1');
         Route::post('email/verify', [RecoveryController::class, 'verifyEmail'])->middleware('throttle:10,1');
     });

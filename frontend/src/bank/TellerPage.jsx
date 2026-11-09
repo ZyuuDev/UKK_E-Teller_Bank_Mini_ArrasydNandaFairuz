@@ -57,7 +57,7 @@ function useTellerWorkflow(tellerId, onChange, canCreate) {
   const [query, setQuery] = useState(() => readPending(tellerId)?.query || '')
   const [found, setFound] = useState(null)
   const [mode, setMode] = useState('deposit')
-  const [draft, setDraft] = useState({ amount: '', notes: '' })
+  const [draft, setDraft] = useState({ amount: '', notes: '', appointment_id: '' })
   const [review, setReview] = useState(null)
   const [rejected, setRejected] = useState(false)
   const [receipt, setReceipt] = useState(null)
@@ -78,7 +78,7 @@ function useTellerWorkflow(tellerId, onChange, canCreate) {
     try {
       setFound((await api(`/teller/search?q=${encodeURIComponent(value)}`)).data)
       setQuery(value)
-      setDraft({ amount: '', notes: '' })
+      setDraft({ amount: '', notes: '', appointment_id: '' })
       setMode('deposit')
     } catch (failure) {
       setError(failure.message)
@@ -129,6 +129,7 @@ function useTellerWorkflow(tellerId, onChange, canCreate) {
           account_number: found.saver.account_number,
           amount,
           notes: draft.notes ? draft.notes.trim() : null,
+          appointment_id: draft.appointment_id ? Number(draft.appointment_id) : null,
           request_id: crypto.randomUUID(),
         }
     setReview({
@@ -137,6 +138,9 @@ function useTellerWorkflow(tellerId, onChange, canCreate) {
       body,
       full_name: found.member.full_name,
       student_number: found.member.student_number,
+      appointment_code: draft.appointment_id
+        ? found.today_appointments?.find((a) => a.id === Number(draft.appointment_id))?.appointment_code
+        : null,
     })
     setError('')
   }
@@ -229,6 +233,15 @@ function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
   const [confirmResetPin, setConfirmResetPin] = useState(false)
   const [resetMessage, setResetMessage] = useState('')
   const [resetBusy, setResetBusy] = useState(false)
+
+  const [showApptModal, setShowApptModal] = useState(false)
+  const [apptAmount, setApptAmount] = useState('')
+  const [apptDate, setApptDate] = useState('')
+  const [apptNotes, setApptNotes] = useState('')
+  const [apptBusy, setApptBusy] = useState(false)
+  const [apptError, setApptError] = useState('')
+  const [apptMessage, setApptMessage] = useState('')
+
   const snapshot = tx.pending?.body || tx.review?.body
   const operation = tx.pending
     ? tx.pending.path.split('/').at(-1)
@@ -242,6 +255,40 @@ function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
         ? 'Setoran pertama'
         : 'Setoran'
   const step = tx.receipt ? 4 : verifying ? 3 : tx.found ? 2 : 1
+
+  function getMinApptDate() {
+    const d = new Date()
+    d.setDate(d.getDate() + 1)
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  }
+
+  async function handleCreateAppt(e) {
+    e.preventDefault()
+    if (apptBusy || !tx.found?.saver) return
+    setApptBusy(true)
+    setApptError('')
+    try {
+      const res = await api('/teller/appointments', {
+        method: 'POST',
+        body: {
+          account_number: tx.found.saver.account_number,
+          amount: Number(apptAmount),
+          scheduled_date: apptDate,
+          notes: apptNotes ? apptNotes.trim() : null,
+        },
+      })
+      setApptMessage(res.message || 'Perjanjian berhasil diajukan dan menunggu persetujuan Admin.')
+      setShowApptModal(false)
+      tx.search(tx.found.saver.account_number)
+    } catch (err) {
+      setApptError(err.message)
+    } finally {
+      setApptBusy(false)
+    }
+  }
 
   async function handleResetPin() {
     if (!tx.found?.saver) return
@@ -275,6 +322,7 @@ function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
       </ol>
       <Notice error>{tx.error}</Notice>
       {resetMessage && <Notice>{resetMessage}</Notice>}
+      {apptMessage && <Notice tone="success">{apptMessage}</Notice>}
       {!canCreate && !tx.pending && (
         <Notice>
           Sesi hari ini belum terbuka atau sedang diperiksa. Buka area Sesi kas dan muat
@@ -368,8 +416,14 @@ function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
                       <DetailRow label="Saldo total">
                         {money(tx.found.saver.balance)}
                       </DetailRow>
-                      <DetailRow label="Saldo tersedia">
-                        {money(tx.found.saver.available_balance)}
+                      <DetailRow label="Saldo wajib mengendap">
+                        {money(10000)}
+                      </DetailRow>
+                      <DetailRow label="Saldo dapat ditarik">
+                        <strong className="text-primary">{money(tx.found.saver.available_balance)}</strong>
+                      </DetailRow>
+                      <DetailRow label="Sisa limit bebas harian">
+                        {money(tx.found.limits?.remaining_daily_limit ?? 1000000)} / {money(1000000)}
                       </DetailRow>
                     </dl>
                     <div className="bank-actions teller-gap">
@@ -382,6 +436,20 @@ function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
                         }}
                       >
                         Reset PIN siswa (123456)
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        disabled={tx.busy}
+                        onClick={() => {
+                          setApptError('')
+                          setApptMessage('')
+                          setApptAmount(tx.draft.amount || '')
+                          setApptDate('')
+                          setApptNotes('')
+                          setShowApptModal(true)
+                        }}
+                      >
+                        Buat Perjanjian H-1 (&gt; 1 Jt)
                       </Button>
                     </div>
                   </>
@@ -443,6 +511,67 @@ function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
                   </div>
                   <MoneyPreview value={tx.draft.amount} />
                 </div>
+                {tx.found.saver && tx.mode === 'withdraw' && (() => {
+                  const amountNum = Number(tx.draft.amount) || 0
+                  const remainingLimit = tx.found.limits?.remaining_daily_limit ?? 1000000
+                  const requiresAppt = amountNum > 1000000 || (tx.found.limits && (tx.found.limits.today_withdrawn + amountNum) > tx.found.limits.daily_withdrawal_limit)
+                  const appts = tx.found.today_appointments || []
+
+                  if (!requiresAppt && appts.length === 0) return null
+
+                  if (appts.length > 0) {
+                    return (
+                      <FormField
+                        label="Tiket Perjanjian Disetujui (Admin)"
+                        hint="Pilih tiket perjanjian yang telah disetujui Admin untuk hari ini."
+                        required={requiresAppt}
+                      >
+                        <Select
+                          value={tx.draft.appointment_id || ''}
+                          onChange={(e) =>
+                            tx.setDraft({ ...tx.draft, appointment_id: e.target.value })
+                          }
+                          required={requiresAppt}
+                          disabled={tx.busy || !canCreate}
+                        >
+                          <option value="">
+                            {requiresAppt
+                              ? '-- Wajib pilih tiket perjanjian disetujui --'
+                              : '-- Opsional: Hubungkan tiket perjanjian --'}
+                          </option>
+                          {appts.map((a) => (
+                            <option key={a.id} value={a.id}>
+                              {a.appointment_code} · Plafon {money(a.amount)}
+                            </option>
+                          ))}
+                        </Select>
+                      </FormField>
+                    )
+                  }
+
+                  return (
+                    <Notice tone="warning">
+                      <strong>Wajib Perjanjian H-1:</strong> Penarikan di atas Rp1.000.000 atau melampaui limit harian wajib memiliki tiket perjanjian H-1 yang telah disetujui Admin. Nasabah ini belum memiliki tiket disetujui untuk hari ini.
+                      <div style={{ marginTop: '0.5rem' }}>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setApptError('')
+                            setApptMessage('')
+                            setApptAmount(tx.draft.amount || '')
+                            setApptDate('')
+                            setApptNotes('')
+                            setShowApptModal(true)
+                          }}
+                        >
+                          Ajukan Perjanjian Penarikan (H-1)
+                        </Button>
+                      </div>
+                    </Notice>
+                  )
+                })()}
                 {tx.found.saver && (
                   <FormField label="Catatan (opsional)">
                     <Input
@@ -482,6 +611,11 @@ function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
             <DetailRow label="Nominal">
               <strong className="teller-amount">{money(snapshot.amount)}</strong>
             </DetailRow>
+            {snapshot.appointment_id && (
+              <DetailRow label="Tiket perjanjian">
+                {tx.review?.appointment_code || `ID #${snapshot.appointment_id}`}
+              </DetailRow>
+            )}
             {operation !== 'activate' && (
               <DetailRow label="Catatan">{snapshot.notes || 'Tidak ada'}</DetailRow>
             )}
@@ -551,6 +685,73 @@ function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
           mengganti PIN melalui menu profil aplikasi.
         </p>
       </ConfirmDialog>
+
+      <Modal
+        open={showApptModal}
+        title="Ajukan Perjanjian Penarikan Kas Besar"
+        onClose={() => setShowApptModal(false)}
+      >
+        <form onSubmit={handleCreateAppt} className="stack">
+          <p>
+            Pendaftaran perjanjian penarikan atas nama nasabah{' '}
+            <strong>{tx.found?.member?.full_name}</strong> ({tx.found?.saver?.account_number}).
+            Pengajuan ini akan diteruskan ke Admin untuk diverifikasi dan disetujui (minimal H-1).
+          </p>
+          {apptError && <Notice tone="danger">{apptError}</Notice>}
+          <FormField
+            label="Nominal penarikan (Rupiah)"
+            hint="Nominal wajib lebih dari Rp1.000.000"
+            required
+          >
+            <Input
+              type="number"
+              min={1000001}
+              step={1}
+              value={apptAmount}
+              onChange={(e) => setApptAmount(e.target.value)}
+              required
+              disabled={apptBusy}
+            />
+          </FormField>
+          <MoneyPreview value={apptAmount} />
+          <FormField
+            label="Tanggal Pengambilan (Minimal H-1)"
+            hint="Pilih tanggal mulai besok atau hari kerja berikutnya"
+            required
+          >
+            <Input
+              type="date"
+              min={getMinApptDate()}
+              value={apptDate}
+              onChange={(e) => setApptDate(e.target.value)}
+              required
+              disabled={apptBusy}
+            />
+          </FormField>
+          <FormField label="Keperluan / Catatan">
+            <Input
+              placeholder="Contoh: Pembayaran kegiatan sekolah / keperluan keluarga"
+              maxLength={255}
+              value={apptNotes}
+              onChange={(e) => setApptNotes(e.target.value)}
+              disabled={apptBusy}
+            />
+          </FormField>
+          <div className="button-group modal-actions">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowApptModal(false)}
+              disabled={apptBusy}
+            >
+              Batal
+            </Button>
+            <Button type="submit" variant="primary" busy={apptBusy}>
+              Kirim ke Admin
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </section>
   )
 }
@@ -926,6 +1127,159 @@ function CloseSession({ sessions, pending, onChanged }) {
   )
 }
 
+function TellerAppointments() {
+  const [page, setPage] = useState(1)
+  const [status, setStatus] = useState('')
+  const [query, setQuery] = useState('')
+
+  const params = new URLSearchParams()
+  params.set('page', page)
+  if (status) params.set('status', status)
+  if (query.trim()) params.set('q', query.trim())
+
+  const appointments = useResource(`/teller/appointments?${params.toString()}`)
+
+  const columns = [
+    {
+      key: 'code',
+      header: 'Kode Tiket',
+      render: (item) => (
+        <div>
+          <strong className="mono">{item.appointment_code}</strong>
+          <div className="subtext">
+            Diajukan oleh: {item.creator_role === 'student' ? 'Siswa' : 'Teller'}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'member',
+      header: 'Nasabah',
+      render: (item) => (
+        <div>
+          <strong>{item.saver?.member?.full_name || '-'}</strong>
+          <div className="subtext">
+            NIS: {item.saver?.member?.student_number || '-'} &bull; Rek:{' '}
+            {item.saver?.account_number || '-'}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'amount',
+      header: 'Nominal',
+      render: (item) => (
+        <strong className="mono text-primary">{money(item.amount)}</strong>
+      ),
+    },
+    {
+      key: 'date',
+      header: 'Tgl Pengambilan',
+      render: (item) => (
+        <div>
+          <span>{item.scheduled_date}</span>
+          {item.notes && <div className="subtext italic">"{item.notes}"</div>}
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status Persetujuan Admin',
+      render: (item) => {
+        if (item.status === 'pending') {
+          return <Status tone="warning">Menunggu Persetujuan Admin</Status>
+        }
+        if (item.status === 'approved') {
+          return <Status tone="success">Disetujui Admin</Status>
+        }
+        if (item.status === 'completed') {
+          return <Status tone="neutral">Selesai Dicairkan</Status>
+        }
+        return (
+          <div>
+            <Status tone="danger">Ditolak</Status>
+            {item.rejection_reason && (
+              <div className="subtext text-danger">{item.rejection_reason}</div>
+            )}
+          </div>
+        )
+      },
+    },
+  ]
+
+  return (
+    <section className="bank-panel">
+      <h2>Daftar Perjanjian Penarikan Kas Besar (&gt; Rp1.000.000)</h2>
+      <Notice>
+        Penarikan di atas Rp1.000.000 wajib memiliki perjanjian minimal H-1 yang telah disetujui Admin.
+      </Notice>
+      <div className="filter-row" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', margin: '1rem 0' }}>
+        <div style={{ flex: 1, minWidth: '200px' }}>
+          <Input
+            type="search"
+            placeholder="Cari kode tiket, nama siswa, NIS, atau rekening..."
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value)
+              setPage(1)
+            }}
+          />
+        </div>
+        <div style={{ width: '220px' }}>
+          <Select
+            value={status}
+            onChange={(e) => {
+              setStatus(e.target.value)
+              setPage(1)
+            }}
+          >
+            <option value="">Semua Status</option>
+            <option value="pending">Menunggu Persetujuan</option>
+            <option value="approved">Disetujui</option>
+            <option value="completed">Selesai Dicairkan</option>
+            <option value="rejected">Ditolak</option>
+          </Select>
+        </div>
+        <Button variant="outline" onClick={() => appointments.refresh()}>
+          Segarkan
+        </Button>
+      </div>
+
+      <ResourceState
+        resource={appointments}
+        emptyLabel="Belum ada data perjanjian penarikan."
+      >
+        {() => (
+          <>
+            <DataTable columns={columns} rows={appointments.data?.data || []} />
+            <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center' }}>
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                Sebelumnya
+              </Button>
+              <span className="subtext" style={{ margin: '0 0.75rem' }}>
+                Halaman {appointments.data?.current_page || 1} dari {appointments.data?.last_page || 1}
+              </span>
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={page >= (appointments.data?.last_page || 1)}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Berikutnya
+              </Button>
+            </div>
+          </>
+        )}
+      </ResourceState>
+    </section>
+  )
+}
+
 export default function TellerPage({ tellerId }) {
   const sessions = useResource('/teller/cash-sessions')
   const statusRes = useResource('/teller/service-status')
@@ -969,6 +1323,7 @@ export default function TellerPage({ tellerId }) {
   const areas = [
     ['session', 'Sesi kas'],
     ['transaction', 'Pelayanan transaksi'],
+    ['appointments', 'Perjanjian penarikan'],
     ['close', 'Tutup kas'],
     ['reports', 'Riwayat laporan'],
   ]
@@ -1092,6 +1447,7 @@ export default function TellerPage({ tellerId }) {
       {area === 'close' && (
         <CloseSession sessions={sessions} pending={tx.pending} onChanged={refresh} />
       )}
+      {area === 'appointments' && <TellerAppointments />}
       {area === 'reports' && <ReportsPage teller key={reportsVersion} />}
       <Modal
         open={scannerOpen}

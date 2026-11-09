@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   BookOpen,
+  CalendarDays,
   ClipboardCheck,
   FileUp,
   Landmark,
@@ -13,6 +14,7 @@ import {
 import { api, getToken, setToken } from './bank/api'
 import { LoginPage, PasswordPage } from './bank/AuthPages'
 import {
+  AppointmentsPage,
   ImportPage,
   LedgerPage,
   MembersPage,
@@ -60,6 +62,12 @@ const pages = {
     group: 'Pengawasan',
     icon: ClipboardCheck,
     component: ReportsPage,
+  },
+  appointments: {
+    label: 'Perjanjian penarikan',
+    group: 'Pengawasan',
+    icon: CalendarDays,
+    component: AppointmentsPage,
   },
   journals: {
     label: 'Jurnal akuntansi',

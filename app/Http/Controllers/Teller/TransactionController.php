@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Member;
 use App\Models\Saver;
 use App\Models\Transaction;
+use App\Models\WithdrawalAppointment;
 use App\Services\AuditService;
 use App\Services\BankingService;
 use Illuminate\Http\Request;
@@ -20,9 +21,22 @@ class TransactionController extends Controller
         $member = $saver?->member ?? Member::where('student_number', $query)->first();
         abort_unless($member, 404, 'Anggota tidak ditemukan. Gunakan nomor siswa, nomor rekening, atau QR.');
         $saver = $saver ?? $member->saver;
+
+        $limits = null;
+        $appointments = [];
+        if ($saver && $member->account_status === 'active') {
+            $limits = app(BankingService::class)->getWithdrawalLimits($saver);
+            $appointments = WithdrawalAppointment::where('saver_id', $saver->id)
+                ->where('status', 'approved')
+                ->whereDate('scheduled_date', today()->toDateString())
+                ->get(['id', 'appointment_code', 'amount', 'scheduled_date', 'notes']);
+        }
+
         return response()->json(['data' => [
             'member' => $member->only(['user_id', 'student_number', 'full_name', 'graduation_year', 'major', 'account_status']),
             'saver' => $member->account_status === 'active' ? $saver?->profile() : null,
+            'limits' => $limits,
+            'today_appointments' => $appointments,
         ]]);
     }
 
@@ -55,9 +69,19 @@ class TransactionController extends Controller
             'amount' => 'required|integer|min:1|max:1000000000000',
             'security_pin' => $type === 'Withdrawal' ? 'required|string|digits:6' : 'nullable|string',
             'notes' => 'nullable|string|max:255',
+            'appointment_id' => 'nullable|integer|exists:withdrawal_appointments,id',
             'request_id' => 'required|uuid',
         ]);
-        $transaction = $bank->transact($data['account_number'], (int) $data['amount'], $type, $data['security_pin'] ?? null, $request->user()->id, $data['request_id'], $data['notes'] ?? null);
+        $transaction = $bank->transact(
+            $data['account_number'],
+            (int) $data['amount'],
+            $type,
+            $data['security_pin'] ?? null,
+            $request->user()->id,
+            $data['request_id'],
+            $data['notes'] ?? null,
+            isset($data['appointment_id']) ? (int) $data['appointment_id'] : null
+        );
         return response()->json(['data' => $transaction->receipt()], 201);
     }
 

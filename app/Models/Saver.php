@@ -25,6 +25,11 @@ class Saver extends Model
         return $this->hasMany(Transaction::class);
     }
 
+    public function appointments()
+    {
+        return $this->hasMany(WithdrawalAppointment::class);
+    }
+
     public function profile(): array
     {
         $this->loadMissing('member.user');

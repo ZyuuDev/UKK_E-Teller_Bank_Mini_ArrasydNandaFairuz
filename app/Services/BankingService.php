@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Member;
 use App\Models\Saver;
 use App\Models\Transaction;
+use App\Models\WithdrawalAppointment;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
@@ -134,13 +135,35 @@ class BankingService
         }, 5);
     }
 
-    public function transact(string $accountNumber, int $amount, string $type, ?string $pin, int $tellerId, string $requestId, ?string $notes): Transaction
+    public function getWithdrawalLimits(Saver $saver): array
+    {
+        $todayDate = today()->toDateString();
+        $todayWithdrawn = (int) Transaction::where('saver_id', $saver->id)
+            ->where('transaction_type', 'Withdrawal')
+            ->whereDate('date', $todayDate)
+            ->sum('amount');
+
+        $dailyLimit = (int) config('bank.daily_withdrawal_limit', 1000000);
+        $minimumBalance = (int) config('bank.minimum_balance', 10000);
+
+        return [
+            'balance' => $saver->balance,
+            'minimum_balance' => $minimumBalance,
+            'max_withdrawable' => max(0, $saver->balance - $minimumBalance),
+            'daily_withdrawal_limit' => $dailyLimit,
+            'appointment_threshold' => (int) config('bank.appointment_threshold', 1000000),
+            'today_withdrawn' => $todayWithdrawn,
+            'remaining_daily_limit' => max(0, $dailyLimit - $todayWithdrawn),
+        ];
+    }
+
+    public function transact(string $accountNumber, int $amount, string $type, ?string $pin, int $tellerId, string $requestId, ?string $notes, ?int $appointmentId = null): Transaction
     {
         $this->ensureAmount($amount);
         if (!in_array($type, ['Deposit', 'Withdrawal'], true)) {
             $this->reject('type', 'Jenis transaksi tidak sah.');
         }
-        return DB::transaction(function () use ($accountNumber, $amount, $type, $pin, $tellerId, $requestId, $notes) {
+        return DB::transaction(function () use ($accountNumber, $amount, $type, $pin, $tellerId, $requestId, $notes, $appointmentId) {
             $session = $this->session($tellerId);
             $saver = Saver::with('member.user')->where('account_number', $accountNumber)->lockForUpdate()->firstOrFail();
             if ($previous = $this->replay($requestId, $tellerId, $saver->user_id, $amount, $type)) {
@@ -150,6 +173,9 @@ class BankingService
             if (!$saver->member || !$saver->member->user || !$saver->member->user->is_active || $saver->member->account_status !== 'active') {
                 $this->reject('account_number', 'Layanan rekening sedang tidak aktif.');
             }
+
+            $usedAppointmentId = null;
+
             if ($type === 'Withdrawal') {
                 if (!Hash::check((string) $pin, $saver->security_pin)) {
                     $this->reject('security_pin', 'PIN tidak benar.');
@@ -161,12 +187,52 @@ class BankingService
                 if ($amount > $cash) {
                     $this->reject('amount', 'Kas loket tidak mencukupi untuk penarikan ini.');
                 }
+
+                $todayDate = today()->toDateString();
+                $todayWithdrawn = (int) Transaction::where('saver_id', $saver->id)
+                    ->where('transaction_type', 'Withdrawal')
+                    ->whereDate('date', $todayDate)
+                    ->sum('amount');
+
+                $threshold = (int) config('bank.appointment_threshold', 1000000);
+                $dailyLimit = (int) config('bank.daily_withdrawal_limit', 1000000);
+                $requiresAppointment = $amount > $threshold || ($todayWithdrawn + $amount) > $dailyLimit;
+
+                if ($requiresAppointment) {
+                    $appointmentQuery = WithdrawalAppointment::where('saver_id', $saver->id)
+                        ->where('status', 'approved')
+                        ->whereDate('scheduled_date', $todayDate)
+                        ->lockForUpdate();
+
+                    if ($appointmentId) {
+                        $appointment = $appointmentQuery->where('id', $appointmentId)->first();
+                    } else {
+                        $appointment = $appointmentQuery->where('amount', '>=', $amount)->orderByDesc('amount')->first();
+                    }
+
+                    if (!$appointment) {
+                        if ($amount > $threshold) {
+                            $this->reject('amount', 'Penarikan di atas Rp1.000.000 wajib memiliki perjanjian H-1 yang telah disetujui Admin.');
+                        } else {
+                            $formattedWithdrawn = number_format($todayWithdrawn, 0, ',', '.');
+                            $this->reject('amount', "Total penarikan hari ini melebihi limit harian Rp1.000.000 (sudah ditarik: Rp{$formattedWithdrawn}). Penarikan tambahan wajib memiliki perjanjian H-1 yang telah disetujui Admin.");
+                        }
+                    }
+
+                    if ($amount > $appointment->amount) {
+                        $formattedApptAmount = number_format($appointment->amount, 0, ',', '.');
+                        $this->reject('amount', "Nominal penarikan melebihi plafon perjanjian yang disetujui Admin (Maks Rp{$formattedApptAmount}).");
+                    }
+
+                    $appointment->update(['status' => 'completed']);
+                    $usedAppointmentId = $appointment->id;
+                }
             }
-            return $this->record($session, $saver, $amount, $type, $tellerId, $requestId, $notes);
+            return $this->record($session, $saver, $amount, $type, $tellerId, $requestId, $notes, $usedAppointmentId);
         }, 5);
     }
 
-    private function record(object $session, Saver $saver, int $amount, string $type, int $tellerId, string $requestId, ?string $notes): Transaction
+    private function record(object $session, Saver $saver, int $amount, string $type, int $tellerId, string $requestId, ?string $notes, ?int $appointmentId = null): Transaction
     {
         $balance = $saver->balance + ($type === 'Deposit' ? $amount : -$amount);
         if ($balance < 0 || $balance > config('bank.maximum_balance')) {
@@ -187,6 +253,7 @@ class BankingService
             'amount' => $amount,
             'date' => today()->toDateString(),
             'notes' => $notes,
+            'withdrawal_appointment_id' => $appointmentId,
             'balance_after' => $balance,
             'snapshot_account_number' => $saver->account_number,
             'snapshot_member_name' => $saver->member?->full_name ?? ($saver->full_name ?? 'Nasabah'),
