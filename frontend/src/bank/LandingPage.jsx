@@ -1119,12 +1119,12 @@ export default function LandingPage({ onOpenLogin }) {
                   <button
                     type="button"
                     className="lp-btn-hero-secondary"
-                    onClick={() => scrollToSection('ekosistem')}
+                    onClick={onOpenLogin}
                   >
-                    <div className="lp-btn-play-circle">
-                      <Play size={11} fill="currentColor" />
+                    <div className="lp-btn-play-circle" style={{ paddingLeft: 0 }}>
+                      <ShieldCheck size={14} />
                     </div>
-                    <span>Lihat Demo</span>
+                    <span>Login ke Pengawas</span>
                   </button>
                 </div>
               </div>
