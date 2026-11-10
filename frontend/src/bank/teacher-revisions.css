@@ -41,11 +41,43 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-@media (max-width: 480px) {
+@media (max-width: 640px) {
   .revision-metrics {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .revision-filter {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
   }
   .revision-filter > .bank-field {
-    flex-basis: 100%;
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
+  }
+  .revision-filter > .bank-button,
+  .revision-filter > button {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+  .revision-gap {
+    margin-top: 16px;
+  }
+  .revision-stack {
+    gap: 20px;
+  }
+  .revision-scanner {
+    width: 100%;
+  }
+  .revision-scanner__controls {
+    flex-direction: column;
+    width: 100%;
+  }
+  .revision-scanner__controls > button {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
   }
 }

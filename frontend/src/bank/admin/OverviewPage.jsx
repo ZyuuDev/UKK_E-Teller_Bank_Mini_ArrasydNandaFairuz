@@ -1,10 +1,7 @@
 import { useState } from 'react'
 import {
   AlertTriangle,
-  ArrowDownRight,
   ArrowRight,
-  ArrowUpRight,
-  CheckCircle2,
   Clock,
   CreditCard,
   FileSpreadsheet,
@@ -13,7 +10,6 @@ import {
   Layers,
   Receipt,
   RefreshCw,
-  ShieldCheck,
   TrendingUp,
   UserCheck,
   Users,
@@ -59,24 +55,24 @@ export default function OverviewPage({ onNavigate }) {
 
   return (
     <>
-      <div className="bank-panel__head" style={{ marginBottom: '16px' }}>
-        <PageHeader
-          title="Ringkasan Bank Mini"
-          description="Pemantauan likuiditas kas sekolah, operasional loket teller harian, dan aktivitas tabungan siswa."
-        />
-        <Button
-          variant="secondary"
-          disabled={stats.loading}
-          onClick={stats.refresh}
-        >
-          <RefreshCw
-            size={15}
-            className={stats.loading ? 'bank-spin' : ''}
-            style={{ marginRight: '6px' }}
-          />
-          <span>Muat Ulang Data</span>
-        </Button>
-      </div>
+      <PageHeader
+        title="Ringkasan Bank Mini"
+        description="Pemantauan likuiditas kas sekolah, operasional loket teller harian, dan aktivitas tabungan siswa."
+        actions={
+          <Button
+            variant="secondary"
+            disabled={stats.loading}
+            onClick={stats.refresh}
+          >
+            <RefreshCw
+              size={15}
+              className={stats.loading ? 'bank-spin' : ''}
+              style={{ marginRight: '6px' }}
+            />
+            <span>Muat Ulang Data</span>
+          </Button>
+        }
+      />
 
       <ResourceState resource={stats}>
         {/* 1. Operational & Teller Monitor Card */}

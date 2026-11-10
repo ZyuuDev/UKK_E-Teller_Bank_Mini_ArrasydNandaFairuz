@@ -278,25 +278,98 @@ button.teller-denom-chip--active:hover:not(:disabled) {
   }
 }
 @media (max-width: 599px) {
+  .teller-session-strip {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 14px 16px;
+    gap: 12px;
+  }
+  .teller-session-strip__left {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .teller-status-switcher {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    gap: 4px;
+    box-sizing: border-box;
+  }
+  .teller-status-switcher button {
+    flex: 1 1 0;
+    text-align: center;
+    justify-content: center;
+    padding: 6px 4px;
+    font-size: 12px;
+    min-height: 36px;
+  }
   .teller-kpi-grid {
     grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  .teller-denom-chips {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+  button.teller-denom-chip,
+  .teller-denom-chip {
+    padding: 6px 4px;
+    font-size: 11.5px;
+    text-align: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 36px;
   }
   .teller-areas {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
   }
   .teller-areas button {
-    padding-inline: 8px;
+    padding: 8px 6px;
     font-size: 12px;
+    min-height: 42px;
+    text-align: center;
+    justify-content: center;
+    line-height: 1.3;
   }
   .teller-steps {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+  .teller-steps li {
+    font-size: 11.5px;
+  }
+  .teller-identify {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
   }
   .teller-identify > .bank-field,
   .teller-identify > button {
     min-width: 0;
+    width: 100%;
     flex-basis: 100%;
+  }
+  .teller-identify > button {
+    min-height: 44px;
+    justify-content: center;
+  }
+  .teller-workgrid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+    padding-top: 16px;
+  }
+  .teller-account {
+    padding: 16px 14px;
+  }
+  .teller-scanner {
+    width: 100%;
+    padding: 12px;
   }
   .teller-cash-stats {
     grid-template-columns: minmax(0, 1fr);

@@ -377,17 +377,20 @@ export function StatCard({ label, value, icon: Icon }) {
   )
 }
 
-export function Status({ value }) {
-  const tone = ['active', 'approved', 'valid', 'service_active', 'buka'].includes(value)
-    ? 'success'
-    : ['disputed', 'invalid', 'service_blocked', 'tutup'].includes(value)
-      ? 'danger'
-      : ['pending', 'submitted', 'duplicate', 'istirahat'].includes(value)
-        ? 'warning'
-        : 'neutral'
+export function Status({ value, tone, children }) {
+  const effectiveValue = value ?? children
+  const effectiveTone =
+    tone ||
+    (['active', 'approved', 'valid', 'service_active', 'buka'].includes(effectiveValue)
+      ? 'success'
+      : ['disputed', 'invalid', 'service_blocked', 'tutup'].includes(effectiveValue)
+        ? 'danger'
+        : ['pending', 'submitted', 'duplicate', 'istirahat'].includes(effectiveValue)
+          ? 'warning'
+          : 'neutral')
   return (
-    <span className={`bank-status bank-status--${tone}`}>
-      {labels[value] || value || 'Tidak tersedia'}
+    <span className={`bank-status bank-status--${effectiveTone}`}>
+      {labels[effectiveValue] || children || effectiveValue || 'Tidak tersedia'}
     </span>
   )
 }
@@ -494,18 +497,20 @@ export function ConfirmDialog({
   title,
   children,
   onClose,
+  onCancel,
   onConfirm,
   busy,
   error,
   confirmLabel = 'Konfirmasi',
   danger = false,
 }) {
+  const handleClose = onClose || onCancel
   return (
-    <Modal open={open} title={title} busy={busy} onClose={onClose}>
+    <Modal open={open} title={title} busy={busy} onClose={handleClose}>
       {children}
       <Notice error>{error}</Notice>
       <div className="bank-actions bank-actions--end">
-        <Button variant="secondary" disabled={busy} onClick={onClose}>
+        <Button variant="secondary" disabled={busy} onClick={handleClose}>
           Batal
         </Button>
         <Button variant={danger ? 'danger' : 'primary'} busy={busy} onClick={onConfirm}>
@@ -527,44 +532,61 @@ export function DetailRow({ label, children }) {
 
 export function DataTable({ rows, columns, actions, caption = 'Daftar data' }) {
   if (!rows?.length) return <EmptyState />
+  const normalizedColumns = (columns || []).map((col) => {
+    if (Array.isArray(col)) {
+      return {
+        key: col[0],
+        label: col[1],
+        type: col[2],
+        render: col[3],
+      }
+    }
+    return {
+      key: col.key,
+      label: col.header || col.label || col.title || col.name,
+      type: col.type,
+      render: col.render,
+    }
+  })
+
   return (
     <div className="bank-table-scroll" tabIndex={0} role="region" aria-label={caption}>
       <table className="bank-table">
         <caption className="bank-sr-only">{caption}</caption>
         <thead>
           <tr>
-            {columns.map(([key, label, type]) => (
-              <th key={key} scope="col" className={type === 'money' ? 'money' : ''}>
-                {label}
+            {normalizedColumns.map((col) => (
+              <th key={col.key} scope="col" className={col.type === 'money' ? 'money' : ''}>
+                {col.label}
               </th>
             ))}
-            {actions && <th scope="col">Tindakan</th>}
+            {actions && <th scope="col" className="bank-table__actions-head">Tindakan</th>}
           </tr>
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.id ?? row.user_id ?? row.row}>
-              {columns.map(([key, , type, render]) => (
-                <td key={key} className={type === 'money' ? 'money' : ''}>
-                  {render ? (
-                    render(row)
-                  ) : type === 'money' ? (
-                    money(row[key])
-                  ) : type === 'status' ? (
-                    <Status value={row[key]} />
-                  ) : typeof row[key] === 'object' && row[key] !== null ? (
+            <tr key={row.id ?? row.user_id ?? row.row ?? row.code}>
+              {normalizedColumns.map((col) => (
+                <td key={col.key} className={col.type === 'money' ? 'money' : ''}>
+                  {col.render ? (
+                    col.render(row)
+                  ) : col.type === 'money' ? (
+                    money(row[col.key])
+                  ) : col.type === 'status' ? (
+                    <Status value={row[col.key]} />
+                  ) : typeof row[col.key] === 'object' && row[col.key] !== null ? (
                     <details>
                       <summary>Lihat rincian</summary>
-                      <HumanDetail value={row[key]} />
+                      <HumanDetail value={row[col.key]} />
                     </details>
                   ) : (
-                    (row[key] ?? 'Belum diisi')
+                    (row[col.key] ?? 'Belum diisi')
                   )}
                 </td>
               ))}
               {actions && (
-                <td>
-                  <div className="bank-actions">{actions(row)}</div>
+                <td className="bank-table__actions-cell">
+                  <div className="bank-actions bank-actions--table">{actions(row)}</div>
                 </td>
               )}
             </tr>
@@ -575,31 +597,45 @@ export function DataTable({ rows, columns, actions, caption = 'Daftar data' }) {
   )
 }
 
-export function Pager({ data, page, onChange }) {
-  if (!data) return null
+export function Pager({
+  data,
+  page,
+  onChange,
+  totalPages,
+  totalItems,
+  onPageChange,
+}) {
+  const currentPage = page || data?.current_page || 1
+  const lastPage = totalPages || data?.last_page || 1
+  const total = totalItems ?? data?.total ?? 0
+  const from = data?.from ?? ((currentPage - 1) * 10 + (total > 0 ? 1 : 0))
+  const to = data?.to ?? Math.min(currentPage * 10, total)
+  const handleChange = onChange || onPageChange || (() => {})
+
+  if (!data && !totalItems && !totalPages) return null
   return (
     <div className="bank-pager">
       <small>
-        {data.total > 0
-          ? `Menampilkan ${data.from}–${data.to} dari ${data.total} data`
+        {total > 0
+          ? `Menampilkan ${from}–${to} dari ${total} data`
           : '0 data'}
       </small>
-      {data.last_page > 1 && (
+      {lastPage > 1 && (
         <div className="bank-actions">
           <Button
             variant="secondary"
-            disabled={page <= 1}
-            onClick={() => onChange(page - 1)}
+            disabled={currentPage <= 1}
+            onClick={() => handleChange(currentPage - 1)}
           >
             Sebelumnya
           </Button>
           <span>
-            Halaman {page} / {data.last_page}
+            Halaman {currentPage} / {lastPage}
           </span>
           <Button
             variant="secondary"
-            disabled={page >= data.last_page}
-            onClick={() => onChange(page + 1)}
+            disabled={currentPage >= lastPage}
+            onClick={() => handleChange(currentPage + 1)}
           >
             Berikutnya
           </Button>

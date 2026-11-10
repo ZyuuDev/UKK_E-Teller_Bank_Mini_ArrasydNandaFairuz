@@ -199,8 +199,8 @@ export default function AppointmentsPage() {
 
       <div className="card">
         {/* 4. Baris filter status dan pencarian keyword (kode tiket, NIS, nama siswa) */}
-        <div className="filter-row" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
-          <div style={{ flex: 1, minWidth: '200px' }}>
+        <div className="filter-row">
+          <div className="filter-row__search">
             <Input
               type="search"
               placeholder="Cari kode tiket, nama siswa, NIS, atau rekening..."
@@ -211,7 +211,7 @@ export default function AppointmentsPage() {
               }}
             />
           </div>
-          <div style={{ width: '220px' }}>
+          <div className="filter-row__select">
             <Select
               value={status}
               onChange={(e) => {

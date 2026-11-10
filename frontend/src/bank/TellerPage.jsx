@@ -1223,8 +1223,8 @@ function TellerAppointments() {
       <Notice>
         Penarikan di atas Rp1.000.000 wajib memiliki perjanjian minimal H-1 yang telah disetujui Admin.
       </Notice>
-      <div className="filter-row" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', margin: '1rem 0' }}>
-        <div style={{ flex: 1, minWidth: '200px' }}>
+      <div className="filter-row">
+        <div className="filter-row__search">
           <Input
             type="search"
             placeholder="Cari kode tiket, nama siswa, NIS, atau rekening..."
@@ -1235,7 +1235,7 @@ function TellerAppointments() {
             }}
           />
         </div>
-        <div style={{ width: '220px' }}>
+        <div className="filter-row__select">
           <Select
             value={status}
             onChange={(e) => {

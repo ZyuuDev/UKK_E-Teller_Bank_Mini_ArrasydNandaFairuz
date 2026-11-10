@@ -1,8 +1,10 @@
 .admin-filters {
-    display: grid;
-    grid-template-columns: minmax(180px, 1.5fr) minmax(130px, 0.7fr) minmax(160px, 1fr) auto;
-    gap: 16px;
-    align-items: end;
+  display: grid;
+  grid-template-columns: minmax(200px, 1.5fr) repeat(auto-fit, minmax(140px, 1fr)) auto;
+  gap: 14px;
+  align-items: end;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .admin-search {
@@ -10,6 +12,8 @@
   gap: 12px;
   align-items: end;
   flex-wrap: wrap;
+  width: 100%;
+  box-sizing: border-box;
 }
 .admin-search > label {
   flex: 1;
@@ -758,18 +762,183 @@ button.admin-feed-tab-btn--active:hover:not(:disabled) {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+@media (max-width: 1023px) {
+  .admin-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .admin-filters .bank-actions {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (max-width: 768px) {
   .admin-monitor-card {
     flex-direction: column;
+    align-items: stretch;
+    padding: 14px 16px;
+    gap: 12px;
+  }
+  .admin-monitor-card__left {
+    flex-direction: column;
     align-items: flex-start;
+    gap: 8px;
+  }
+  .admin-monitor-card__right {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    gap: 8px;
   }
   .admin-alert-banner {
     flex-direction: column;
+    align-items: stretch;
+    padding: 14px 16px;
+    gap: 12px;
+  }
+  .admin-alert-banner__content {
     align-items: flex-start;
   }
+  .admin-alert-banner__actions {
+    width: 100%;
+  }
+  .admin-alert-banner__actions > .bank-button,
+  .admin-alert-banner__actions > button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .admin-steps {
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 18px;
+    padding: 12px 14px;
+    background: var(--surface-subdued);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+  }
+  .admin-steps li {
+    font-size: 13px;
+  }
+  .admin-steps li > span {
+    width: 26px;
+    height: 26px;
+    font-size: 12px;
+  }
+
+  .admin-feed-panel__head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .admin-feed-tabs {
+    display: flex;
+    width: 100%;
+    padding: 3px;
+    box-sizing: border-box;
+  }
+  button.admin-feed-tab-btn,
+  .admin-feed-tab-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 8px 6px;
+    font-size: 12px;
+    text-align: center;
+    justify-content: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
+
+@media (max-width: 640px) {
+  .admin-filters {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    align-items: stretch;
+  }
+  .admin-filters > * {
+    width: 100%;
+    min-width: 0;
+  }
+  .admin-filters .bank-actions {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .admin-filters .bank-actions > .bank-button,
+  .admin-filters .bank-actions > button {
+    flex: 1 1 0;
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 13.5px;
+  }
+
+  .admin-search {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+    align-items: stretch;
+  }
+  .admin-search > label {
+    width: 100%;
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+  .admin-search > .bank-button,
+  .admin-search > button {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+  .admin-filter-single {
+    width: 100%;
+    margin-bottom: 16px;
+  }
+
+  .admin-bar-chart {
+    height: 150px;
+    gap: 6px;
+    padding: 12px 6px 6px;
+  }
+  .admin-bar {
+    max-width: 12px;
+  }
+  .admin-chart-label {
+    font-size: 10px;
+  }
+  .admin-trend-card__head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .admin-trend-card__legend {
+    gap: 10px;
+  }
+}
+
 @media (max-width: 599px) {
   .admin-kpi-grid {
     grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .admin-kpi-card {
+    padding: 14px 16px;
+  }
+  .admin-kpi-card__value {
+    font-size: 20px;
+  }
+  .admin-trend-card,
+  .admin-quick-hub,
+  .admin-feed-panel {
+    padding: 16px;
   }
 }

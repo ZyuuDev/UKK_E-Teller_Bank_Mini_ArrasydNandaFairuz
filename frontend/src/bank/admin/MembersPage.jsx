@@ -103,7 +103,7 @@ export default function MembersPage() {
       />
       <Notice>{message}</Notice>
       <section className="bank-panel">
-        <div className="bank-actions" style={{ marginBottom: '1rem', gap: '0.5rem' }}>
+        <div className="bank-segmented-actions">
           <Button
             variant={filter.account_status === 'inactive' ? 'primary' : 'secondary'}
             onClick={() => {
