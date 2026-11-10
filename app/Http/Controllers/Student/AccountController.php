@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 
 class AccountController extends Controller
 {
+    // 1. Profil akun siswa (informasi nasabah, status rekening, nomor rekening, saldo, dan status operasional teller)
     public function profile(Request $request)
     {
         $member = $request->user()->member()->with('saver')->firstOrFail();
@@ -21,6 +22,7 @@ class AccountController extends Controller
         ]);
     }
 
+    // 2. Riwayat mutasi transaksi buku tabungan siswa (debet / kredit per halaman)
     public function mutations(Request $request)
     {
         $member = $request->user()->member()->with('saver')->firstOrFail();

@@ -18,11 +18,13 @@ class BankingService
     {
     }
 
+    // Validasi pesan error dan lempar ValidationException
     private function reject(string $field, string $message): never
     {
         throw ValidationException::withMessages([$field => $message]);
     }
 
+    // Validasi sesi kas loket teller (wajib open dan belum ditutup)
     private function session(int $tellerId): object
     {
         app(CashSessionService::class)->autoCloseForgottenSessions();
@@ -36,6 +38,7 @@ class BankingService
         return $session;
     }
 
+    // Idempotency check: cegah double submit dengan request_id yang sama
     private function replay(string $requestId, int $tellerId, int $memberId, int $amount, string $type): ?Transaction
     {
         $transaction = Transaction::with('saver')->where('request_id', $requestId)->first();
@@ -62,6 +65,7 @@ class BankingService
         }
     }
 
+    // Generator nomor rekening unik tahunan (format: BMS-YYYY-XXXX)
     private function accountNumber(): string
     {
         $year = (int) now()->format('Y');
@@ -71,6 +75,7 @@ class BankingService
         return 'BMS-'.$year.'-'.str_pad((string) $sequence->next_number, 4, '0', STR_PAD_LEFT);
     }
 
+    // Hitung sisa fisik uang kas di laci loket teller secara real-time
     private function availableCash(object $session): int
     {
         $additional = 0;
@@ -85,6 +90,7 @@ class BankingService
         return (int) $session->opening_balance + $additional + $deposits - $withdrawals;
     }
 
+    // 1. Aktivasi rekening nasabah (setoran awal min Rp 10.000 + tetapkan PIN + nomor rekening)
     public function activate(int $memberId, int $amount, string $pin, int $tellerId, string $requestId): Transaction
     {
         $this->ensureAmount($amount);
@@ -135,6 +141,7 @@ class BankingService
         }, 5);
     }
 
+    // 2. Kalkulasi batas limit penarikan (saldo dapat ditarik, limit harian Rp 1 jt, threshold janji H-1)
     public function getWithdrawalLimits(Saver $saver): array
     {
         $todayDate = today()->toDateString();
@@ -157,6 +164,7 @@ class BankingService
         ];
     }
 
+    // 3. Proses transaksi setor dan tarik tunai (validasi PIN, saldo mengendap, aturan janji H-1)
     public function transact(string $accountNumber, int $amount, string $type, ?string $pin, int $tellerId, string $requestId, ?string $notes, ?int $appointmentId = null): Transaction
     {
         $this->ensureAmount($amount);
@@ -180,6 +188,7 @@ class BankingService
                 if (!Hash::check((string) $pin, $saver->security_pin)) {
                     $this->reject('security_pin', 'PIN tidak benar.');
                 }
+                // Validasi saldo mengendap minimal Rp 10.000 (contoh: saldo Rp 1.000.000 max tarik Rp 990.000)
                 if ($saver->balance - $amount < config('bank.minimum_balance')) {
                     $this->reject('amount', 'Penarikan harus menyisakan saldo minimal Rp10.000.');
                 }
@@ -198,6 +207,7 @@ class BankingService
                 $dailyLimit = (int) config('bank.daily_withdrawal_limit', 1000000);
                 $requiresAppointment = $amount > $threshold || ($todayWithdrawn + $amount) > $dailyLimit;
 
+                // Verifikasi perjanjian H-1 jika penarikan > Rp 1.000.000 atau akumulasi harian melebihi limit
                 if ($requiresAppointment) {
                     $appointmentQuery = WithdrawalAppointment::where('saver_id', $saver->id)
                         ->where('status', 'approved')
@@ -232,6 +242,7 @@ class BankingService
         }, 5);
     }
 
+    // 4. Pembukuan transaksi: update saldo, simpan histori transaksi, dan jurnal akuntansi double-entry (101 Kas vs 201 Simpanan)
     private function record(object $session, Saver $saver, int $amount, string $type, int $tellerId, string $requestId, ?string $notes, ?int $appointmentId = null): Transaction
     {
         $balance = $saver->balance + ($type === 'Deposit' ? $amount : -$amount);

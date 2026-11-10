@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 
 class SaverController extends Controller
 {
+    // 1. [Data Penabung] Menampilkan daftar seluruh rekening nasabah aktif dan saldonya
     public function index(Request $request)
     {
         $request->validate(['q' => 'nullable|string|max:100']);
@@ -25,6 +26,7 @@ class SaverController extends Controller
         return response()->json(['data' => $rows]);
     }
 
+    // 2. [Data Penabung] Reset PIN rekening siswa ke PIN default 123456 oleh Admin
     public function resetPin(Request $request, int $id, AuditService $audit)
     {
         $saver = Saver::with('member')->findOrFail($id);

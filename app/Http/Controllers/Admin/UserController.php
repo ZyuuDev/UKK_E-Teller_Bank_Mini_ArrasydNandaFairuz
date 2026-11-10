@@ -11,11 +11,13 @@ use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
+    // 1. [Kelola Petugas] Menampilkan daftar seluruh akun staf (Admin dan Teller)
     public function index()
     {
         return response()->json(['data' => User::whereIn('role', ['admin', 'teller'])->orderBy('name')->get()]);
     }
 
+    // 2. [Kelola Petugas] Mendaftarkan staf baru (Admin / Teller) ke sistem
     public function store(Request $request, AuditService $audit)
     {
         $data = $request->validate([
@@ -32,6 +34,7 @@ class UserController extends Controller
         return response()->json(['data' => $user], 201);
     }
 
+    // 3. [Kelola Petugas] Mengubah nama dan status aktif/nonaktif akun staf
     public function update(Request $request, User $user, AuditService $audit)
     {
         abort_unless(in_array($user->role, ['admin', 'teller'], true), 404);
@@ -47,6 +50,7 @@ class UserController extends Controller
         return response()->json(['data' => $user]);
     }
 
+    // 4. [Kelola Petugas] Reset password sementara staf (menghasilkan password acak 16 karakter)
     public function credentials(Request $request, User $user, AuditService $audit)
     {
         abort_unless(in_array($user->role, ['admin', 'teller'], true), 404);
@@ -68,6 +72,7 @@ class UserController extends Controller
         return response()->json(['data' => $result]);
     }
 
+    // 5. [Akses Siswa] Blokir atau aktifkan kembali hak akses login aplikasi siswa
     public function studentAccess(Request $request, User $user, AuditService $audit)
     {
         abort_unless($user->role === 'student', 404);

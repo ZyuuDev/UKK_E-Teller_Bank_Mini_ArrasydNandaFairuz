@@ -14,6 +14,7 @@ class MemberController extends Controller
     {
     }
 
+    // 1. [Data Anggota] Menampilkan daftar seluruh data siswa dengan filter NIS, nama, jurusan, status
     public function index(Request $request)
     {
         $request->validate(['q' => 'nullable|string|max:100', 'graduation_year' => 'nullable|integer', 'major' => 'nullable|string|max:20', 'account_status' => 'nullable|in:active,inactive']);
@@ -32,6 +33,7 @@ class MemberController extends Controller
         return response()->json(['data' => $query->paginate(25)]);
     }
 
+    // 2. [Data Anggota] Mendaftarkan akun siswa baru ke sistem bank mini
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -43,6 +45,7 @@ class MemberController extends Controller
         return response()->json(['data' => $this->members->create($data, $request->user()->id)], 201);
     }
 
+    // 3. [Data Anggota] Memperbarui informasi data siswa
     public function update(Request $request, Member $member)
     {
         $data = $request->validate([
@@ -54,6 +57,7 @@ class MemberController extends Controller
         return response()->json(['data' => $this->members->update($member, $data, $request->user()->id)]);
     }
 
+    // 4. [Data Anggota] Menghapus data siswa (hanya jika belum memiliki rekening aktif)
     public function destroy(Request $request, Member $member)
     {
         $this->members->delete($member, $request->user()->id);

@@ -12,6 +12,7 @@ use Illuminate\Validation\ValidationException;
 
 class WithdrawalAppointmentController extends Controller
 {
+    // Generator kode tiket unik perjanjian penarikan (format: JANJI-YYMMDD-XXXX)
     private function generateCode(): string
     {
         do {
@@ -21,6 +22,7 @@ class WithdrawalAppointmentController extends Controller
         return $code;
     }
 
+    // 1. [Siswa] Riwayat pengajuan perjanjian penarikan milik sendiri
     public function studentIndex(Request $request)
     {
         $saver = $request->user()->member?->saver;
@@ -33,6 +35,7 @@ class WithdrawalAppointmentController extends Controller
         return response()->json($appointments);
     }
 
+    // 2. [Siswa] Cek batas limit penarikan, saldo dapat ditarik, dan sisa kuota hari ini
     public function studentLimits(Request $request, BankingService $bank)
     {
         $saver = $request->user()->member?->saver;
@@ -43,6 +46,7 @@ class WithdrawalAppointmentController extends Controller
         ]);
     }
 
+    // 3. [Siswa] Formulir pengajuan perjanjian penarikan > Rp 1.000.000 minimal H-1
     public function studentStore(Request $request)
     {
         $saver = $request->user()->member?->saver;
@@ -83,6 +87,7 @@ class WithdrawalAppointmentController extends Controller
         ], 201);
     }
 
+    // 4. [Teller] Monitoring daftar perjanjian penarikan nasabah di loket teller
     public function tellerIndex(Request $request)
     {
         $query = WithdrawalAppointment::with(['saver.member.user', 'approver', 'creator'])->latest();
@@ -112,6 +117,7 @@ class WithdrawalAppointmentController extends Controller
         return response()->json($query->paginate(20));
     }
 
+    // 5. [Teller] Input manual pengajuan perjanjian penarikan H-1 jika siswa belum memiliki aplikasi
     public function tellerStore(Request $request)
     {
         $minThreshold = (int) config('bank.appointment_threshold', 1000000);
@@ -157,6 +163,7 @@ class WithdrawalAppointmentController extends Controller
         ], 201);
     }
 
+    // 6. [Admin] Daftar seluruh antrian permohonan perjanjian penarikan untuk diverifikasi
     public function adminIndex(Request $request)
     {
         $query = WithdrawalAppointment::with(['saver.member.user', 'approver', 'creator'])->latest();
@@ -186,6 +193,7 @@ class WithdrawalAppointmentController extends Controller
         return response()->json($query->paginate(20));
     }
 
+    // 7. [Admin] Menyetujui (Approve) perjanjian penarikan dana siswa
     public function adminApprove(Request $request, WithdrawalAppointment $appointment, AuditService $audit)
     {
         if ($appointment->status !== 'pending') {
@@ -211,6 +219,7 @@ class WithdrawalAppointmentController extends Controller
         ]);
     }
 
+    // 8. [Admin] Menolak (Reject) perjanjian penarikan dengan alasan tertentu
     public function adminReject(Request $request, WithdrawalAppointment $appointment, AuditService $audit)
     {
         if ($appointment->status !== 'pending') {

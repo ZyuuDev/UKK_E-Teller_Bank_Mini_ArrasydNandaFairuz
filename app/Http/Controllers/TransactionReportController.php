@@ -79,6 +79,7 @@ class TransactionReportController extends Controller
         ];
     }
 
+    // 1. [Laporan Transaksi] Mengambil data transaksi harian / bulanan beserta ringkasan setoran, penarikan, & net flow
     public function index(Request $request)
     {
         $filters = $this->filters($request);
@@ -94,6 +95,7 @@ class TransactionReportController extends Controller
         return response()->json(['data' => $data])->header('Cache-Control', 'private, no-store');
     }
 
+    // 2. [Cetak Ulang Struk] Mengambil data struk transaksi resmi untuk dicetak ulang
     public function receipt(Request $request, Transaction $transaction)
     {
         $user = $request->user();
@@ -109,6 +111,7 @@ class TransactionReportController extends Controller
         return preg_match('/^[\s\x00-\x1F]*[=+\-@]/u', $value) ? "'".$value : $value;
     }
 
+    // 3. [Ekspor Laporan] Unduh laporan transaksi dalam format file CSV / PDF cetak resmi
     public function export(Request $request)
     {
         $filters = $this->filters($request);

@@ -15,6 +15,7 @@ import {
   Status,
 } from '../ui'
 
+// [Admin] Halaman Verifikasi & Persetujuan Perjanjian Penarikan Dana Siswa (> Rp 1.000.000, H-1)
 export default function AppointmentsPage() {
   const [page, setPage] = useState(1)
   const [status, setStatus] = useState('')
@@ -33,6 +34,7 @@ export default function AppointmentsPage() {
 
   const appointments = useResource(`/admin/appointments?${params.toString()}`)
 
+  // 1. Aksi Admin: Menyetujui (Approve) permohonan perjanjian penarikan
   async function handleApprove() {
     if (!selected || busy) return
     setBusy(true)
@@ -50,6 +52,7 @@ export default function AppointmentsPage() {
     }
   }
 
+  // 2. Aksi Admin: Menolak (Reject) permohonan perjanjian penarikan dengan alasan
   async function handleReject(event) {
     event.preventDefault()
     if (!selected || busy) return
@@ -72,6 +75,7 @@ export default function AppointmentsPage() {
     }
   }
 
+  // 3. Konfigurasi kolom tabel antrian perjanjian penarikan siswa
   const columns = [
     {
       key: 'code',
@@ -194,6 +198,7 @@ export default function AppointmentsPage() {
       {error && <Notice tone="danger">{error}</Notice>}
 
       <div className="card">
+        {/* 4. Baris filter status dan pencarian keyword (kode tiket, NIS, nama siswa) */}
         <div className="filter-row" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
           <div style={{ flex: 1, minWidth: '200px' }}>
             <Input
@@ -247,6 +252,7 @@ export default function AppointmentsPage() {
         </ResourceState>
       </div>
 
+      {/* 5. Dialog konfirmasi persetujuan (Approve Modal) */}
       <ConfirmDialog
         open={actionType === 'approve' && !!selected}
         title="Setujui Perjanjian Penarikan?"
@@ -269,6 +275,7 @@ export default function AppointmentsPage() {
         </p>
       </ConfirmDialog>
 
+      {/* 6. Modal penolakan dengan input alasan (Reject Modal) */}
       <Modal
         open={actionType === 'reject' && !!selected}
         title="Tolak Perjanjian Penarikan"

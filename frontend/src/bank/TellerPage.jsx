@@ -52,6 +52,7 @@ function todayWib() {
   return `${value('year')}-${value('month')}-${value('day')}`
 }
 
+// [Alur Kerja] Hook useTellerWorkflow: State management transaksi teller (search, draft, verifikasi PIN, submit, struk)
 function useTellerWorkflow(tellerId, onChange, canCreate) {
   const [pending, setPending] = useState(() => readPending(tellerId))
   const [query, setQuery] = useState(() => readPending(tellerId)?.query || '')
@@ -229,6 +230,7 @@ function useTellerWorkflow(tellerId, onChange, canCreate) {
   }
 }
 
+// [Komponen] TransactionWorkspace: Ruang kerja transaksi loket teller (Langkah 1 - 4)
 function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
   const [confirmResetPin, setConfirmResetPin] = useState(false)
   const [resetMessage, setResetMessage] = useState('')
@@ -364,6 +366,7 @@ function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
       )}
       {!verifying && (
         <>
+          {/* [Langkah 1] Pencarian nasabah via NIS, nomor rekening, atau scan token QR/barcode */}
           <form
             className="teller-identify"
             onSubmit={(event) => {
@@ -389,6 +392,7 @@ function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
           </form>
           {tx.found && (
             <div className="teller-workgrid">
+              {/* [Langkah 2] Informasi akun nasabah, saldo total, saldo mengendap Rp 10.000, & limit penarikan */}
               <section className="teller-account">
                 <span className="bank-avatar" aria-hidden="true">
                   {tx.found.member.full_name.slice(0, 1)}
@@ -460,6 +464,7 @@ function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
                   </Notice>
                 )}
               </section>
+              {/* [Langkah 3] Formulir transaksi (Setoran, Penarikan, atau Aktivasi Rekening Siswa Baru) */}
               <form className="bank-form" onSubmit={tx.prepare}>
                 {tx.found.saver && (
                   <FormField label="Jenis transaksi">
@@ -593,6 +598,7 @@ function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
         </>
       )}
       {verifying && (
+        /* [Langkah 4] Konfirmasi & verifikasi transaksi nasabah (PIN keamanan & struk) */
         <div className="teller-verify">
           <h3>Periksa {label.toLowerCase()}</h3>
           <dl className="bank-detail-list">
@@ -686,6 +692,7 @@ function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
         </p>
       </ConfirmDialog>
 
+      {/* Modal input manual perjanjian penarikan H-1 oleh Teller jika siswa belum punya aplikasi */}
       <Modal
         open={showApptModal}
         title="Ajukan Perjanjian Penarikan Kas Besar"
@@ -756,6 +763,7 @@ function TransactionWorkspace({ workflow: tx, canCreate, sessions }) {
   )
 }
 
+// [Sesi Kas] Buka Kasir Loket Awal Hari & Pengajuan Tambahan Modal Kas Fisik
 function OpenSession({ sessions, blocked, onChanged }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -972,6 +980,7 @@ function OpenSession({ sessions, blocked, onChanged }) {
   )
 }
 
+// [Sesi Kas] Tutup Kasir Loket Akhir Hari & Rekonsiliasi Kas Fisik ke Admin
 function CloseSession({ sessions, pending, onChanged }) {
   const [sessionId, setSessionId] = useState('')
   const [cash, setCash] = useState('')
@@ -1127,6 +1136,7 @@ function CloseSession({ sessions, pending, onChanged }) {
   )
 }
 
+// [Monitoring] Daftar Perjanjian Penarikan H-1 Siswa di Loket Teller
 function TellerAppointments() {
   const [page, setPage] = useState(1)
   const [status, setStatus] = useState('')
@@ -1280,6 +1290,7 @@ function TellerAppointments() {
   )
 }
 
+// [Halaman Utama] Dashboard Teller Bank Mini (Status Buka/Tutup Loket, Tab Navigasi, Struk)
 export default function TellerPage({ tellerId }) {
   const sessions = useResource('/teller/cash-sessions')
   const statusRes = useResource('/teller/service-status')

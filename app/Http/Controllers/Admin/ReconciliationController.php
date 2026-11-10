@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 
 class ReconciliationController extends Controller
 {
+    // 1. [Rekonsiliasi Kas] Daftar laporan serah terima kas harian dari seluruh teller
     public function index(Request $request, CashSessionService $sessions)
     {
         $sessions->autoCloseForgottenSessions();
@@ -22,17 +23,20 @@ class ReconciliationController extends Controller
         return response()->json(['data' => $query->paginate(25)]);
     }
 
+    // 2. [Rekonsiliasi Kas] Admin menyetujui (Approve) laporan kas teller dan menutup sesi resmi
     public function approve(Request $request, int $report, CashSessionService $sessions)
     {
         return response()->json(['data' => $sessions->review($report, $request->user()->id, true, null)]);
     }
 
+    // 3. [Rekonsiliasi Kas] Admin menolak (Reject) laporan kas teller jika fisik uang tidak cocok
     public function reject(Request $request, int $report, CashSessionService $sessions)
     {
         $data = $request->validate(['reason' => 'required|string|min:5|max:1000']);
         return response()->json(['data' => $sessions->review($report, $request->user()->id, false, $data['reason'])]);
     }
 
+    // 4. [Permintaan Kas] Daftar permohonan tambahan kas fisik loket teller
     public function cashRequests(Request $request)
     {
         $request->validate(['status' => 'nullable|in:pending,approved,rejected']);
@@ -43,17 +47,20 @@ class ReconciliationController extends Controller
         return response()->json(['data' => $query->paginate(25)]);
     }
 
+    // 5. [Permintaan Kas] Admin menyetujui penambahan modal kas ke laci teller
     public function approveCashRequest(Request $request, int $id, CashSessionService $sessions)
     {
         return response()->json(['data' => $sessions->approveCashRequest($id, $request->user()->id)]);
     }
 
+    // 6. [Permintaan Kas] Admin menolak permohonan tambahan kas
     public function rejectCashRequest(Request $request, int $id, CashSessionService $sessions)
     {
         $data = $request->validate(['reason' => 'required|string|min:3|max:255']);
         return response()->json(['data' => $sessions->rejectCashRequest($id, $request->user()->id, $data['reason'])]);
     }
 
+    // 7. [Audit Keuangan] Laporan jurnal umum buku besar akuntansi double-entry (101 Kas, 201 Simpanan)
     public function journals(Request $request)
     {
         $request->validate([
@@ -94,6 +101,7 @@ class ReconciliationController extends Controller
         return response()->json(['data' => $query->paginate(50)]);
     }
 
+    // 8. [Audit Trail] Log aktivitas sistem (mencatat siapa, aksi apa, data apa, dan kapan dilakukan)
     public function audit(Request $request)
     {
         $request->validate([

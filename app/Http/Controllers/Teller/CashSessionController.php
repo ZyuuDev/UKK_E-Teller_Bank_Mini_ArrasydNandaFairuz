@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 
 class CashSessionController extends Controller
 {
+    // 1. Riwayat 30 sesi kas terakhir milik teller
     public function index(Request $request, CashSessionService $sessions)
     {
         $sessions->autoCloseForgottenSessions();
@@ -20,23 +21,27 @@ class CashSessionController extends Controller
         return response()->json(['data' => $rows->map(fn ($session) => $sessions->summary($session))]);
     }
 
+    // 2. Buka sesi kas loket di awal hari (input modal kas awal)
     public function store(Request $request, CashSessionService $sessions)
     {
         $data = $request->validate(['opening_balance' => 'required|integer|min:0|max:1000000000000']);
         return response()->json(['data' => $sessions->open($request->user()->id, (int) $data['opening_balance'])], 201);
     }
 
+    // 3. Tutup sesi kas di akhir hari (input kas fisik aktual untuk serah terima & rekonsiliasi ke Admin)
     public function submit(Request $request, int $session, CashSessionService $sessions)
     {
         $data = $request->validate(['actual_cash_on_hand' => 'required|integer|min:0|max:9000000000000']);
         return response()->json(['data' => $sessions->submit($session, $request->user()->id, (int) $data['actual_cash_on_hand'])], 201);
     }
 
+    // 4. Laporan rekonsiliasi harian kas teller
     public function reports(Request $request)
     {
         return response()->json(['data' => DailyReconciliation::where('teller_id', $request->user()->id)->orderByDesc('date')->paginate(25)]);
     }
 
+    // 5. Cek jam operasional & status layanan loket teller (buka / istirahat / tutup)
     public function serviceStatus(CashSessionService $sessions)
     {
         $sessions->autoCloseForgottenSessions();
@@ -66,6 +71,7 @@ class CashSessionController extends Controller
         ]);
     }
 
+    // 6. Update manual status layanan teller (buka / istirahat / tutup)
     public function updateServiceStatus(Request $request, AuditService $audit)
     {
         $data = $request->validate([
@@ -82,6 +88,7 @@ class CashSessionController extends Controller
         ]);
     }
 
+    // 7. Riwayat pengajuan penambahan modal kas fisik loket
     public function cashRequests(Request $request)
     {
         $rows = CashRequest::where('teller_id', $request->user()->id)
@@ -93,6 +100,7 @@ class CashSessionController extends Controller
         return response()->json(['data' => $rows]);
     }
 
+    // 8. Pengajuan penambahan modal kas fisik loket ke Admin (ketika uang di laci menipis)
     public function requestCash(Request $request, AuditService $audit)
     {
         $data = $request->validate([

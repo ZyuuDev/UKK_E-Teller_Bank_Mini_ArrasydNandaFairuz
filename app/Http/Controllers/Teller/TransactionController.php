@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 
 class TransactionController extends Controller
 {
+    // 1. Pencarian data nasabah (via No. Rekening, NIS Siswa, atau Token QR)
     public function search(Request $request)
     {
         $data = $request->validate(['q' => 'required|string|max:100']);
@@ -40,6 +41,7 @@ class TransactionController extends Controller
         ]]);
     }
 
+    // 2. Aktivasi rekening baru dan setoran awal pertama kali
     public function activate(Request $request, BankingService $bank)
     {
         $data = $request->validate([
@@ -52,16 +54,19 @@ class TransactionController extends Controller
         return response()->json(['data' => $transaction->receipt()], 201);
     }
 
+    // 3. Transaksi setoran tunai ke rekening siswa
     public function deposit(Request $request, BankingService $bank)
     {
         return $this->perform($request, $bank, 'Deposit');
     }
 
+    // 4. Transaksi penarikan tunai dari rekening siswa
     public function withdraw(Request $request, BankingService $bank)
     {
         return $this->perform($request, $bank, 'Withdrawal');
     }
 
+    // 5. Eksekusi pemrosesan transaksi umum ke BankingService
     private function perform(Request $request, BankingService $bank, string $type)
     {
         $data = $request->validate([
@@ -85,18 +90,21 @@ class TransactionController extends Controller
         return response()->json(['data' => $transaction->receipt()], 201);
     }
 
+    // 6. Mengambil data struk berdasarkan ID transaksi
     public function receipt(Request $request, Transaction $transaction)
     {
         abort_unless($transaction->teller_id === $request->user()->id, 404);
         return response()->json(['data' => $transaction->receipt()]);
     }
 
+    // 7. Mengambil data struk berdasarkan UUID request
     public function byRequest(Request $request, string $requestId)
     {
         $transaction = Transaction::where('request_id', $requestId)->where('teller_id', $request->user()->id)->firstOrFail();
         return response()->json(['data' => $transaction->receipt()]);
     }
 
+    // 8. Reset PIN rekening ke 123456 jika siswa lupa PIN
     public function resetPin(Request $request, AuditService $audit)
     {
         $data = $request->validate([
