@@ -20,6 +20,7 @@ class TransactionReportController extends Controller
             'date' => 'nullable|required_if:period,daily|date_format:Y-m-d',
             'month' => 'nullable|required_if:period,monthly|date_format:Y-m',
             'teller_id' => 'nullable|integer|min:1',
+            'account_number' => 'nullable|string|max:50',
             'page' => 'nullable|integer|min:1',
             'format' => 'nullable|in:pdf,csv',
         ]);
@@ -40,13 +41,21 @@ class TransactionReportController extends Controller
             'until' => $end->copy()->addDay()->format('Y-m-d'),
             'label' => $data['period'] === 'daily' ? $start->format('d/m/Y') : $start->format('m/Y'),
             'teller_id' => $isAdmin ? $requestedId : $ownId,
+            'account_number' => !empty($data['account_number']) ? trim($data['account_number']) : null,
         ];
     }
 
     private function query(array $filters): Builder
     {
         return Transaction::query()->where('date', '>=', $filters['start'])->where('date', '<', $filters['until'])
-            ->when($filters['teller_id'] !== null, fn ($q) => $q->where('teller_id', $filters['teller_id']));
+            ->when($filters['teller_id'] !== null, fn ($q) => $q->where('teller_id', $filters['teller_id']))
+            ->when($filters['account_number'] !== null, function ($q) use ($filters) {
+                $acc = $filters['account_number'];
+                $q->where(function ($sub) use ($acc) {
+                    $sub->where('snapshot_account_number', $acc)
+                        ->orWhereHas('saver', fn ($s) => $s->where('account_number', $acc));
+                });
+            });
     }
 
     private function summary(Builder $query): array
@@ -116,7 +125,7 @@ class TransactionReportController extends Controller
     {
         $filters = $this->filters($request);
         $format = $request->input('format', 'pdf');
-        $filename = 'bank-mini-'.$filters['period'].'-'.$filters['start'].'-'.($filters['teller_id'] ?? 'semua');
+        $filename = 'bank-mini-'.$filters['period'].'-'.$filters['start'].'-'.($filters['teller_id'] ?? 'semua').($filters['account_number'] ? '-rek-'.$filters['account_number'] : '');
         if ($format === 'csv') {
             return response()->streamDownload(function () use ($filters) {
                 $output = fopen('php://output', 'w');

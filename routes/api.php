@@ -139,6 +139,8 @@ Route::middleware(['idle', 'auth:sanctum', 'account'])->group(function () {
         Route::post('member-imports/{id}/commit', [StudentImportController::class, 'commit']);
         Route::get('savers', [SaverController::class, 'index']);
         Route::post('savers/{id}/reset-pin', [SaverController::class, 'resetPin']);
+        Route::get('savers/{saver}/statement', [SaverController::class, 'statement']);
+        Route::get('savers/{saver}/statement/export', [SaverController::class, 'exportStatement']);
         Route::get('reconciliations', [ReconciliationController::class, 'index']);
         Route::post('reconciliations/{report}/approve', [ReconciliationController::class, 'approve']);
         Route::post('reconciliations/{report}/reject', [ReconciliationController::class, 'reject']);

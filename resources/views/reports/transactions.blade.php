@@ -24,7 +24,7 @@
 @if($logo)<img class="logo" src="{{ $logo }}" alt="Bank Mini">@endif
 <h1>Bank Mini SMKN 1 Bantul</h1>
 <div>Laporan transaksi {{ $filters['period'] === 'daily' ? 'harian' : 'bulanan' }} - {{ $filters['label'] }}</div>
-<div class="muted">Lingkup: {{ $filters['teller_id'] ? 'Teller ID '.$filters['teller_id'] : 'Semua teller' }} | Dibuat {{ $printedAt }}</div>
+<div class="muted">Lingkup: {{ $filters['teller_id'] ? 'Teller ID '.$filters['teller_id'] : 'Semua teller' }} {{ !empty($filters['account_number']) ? '| No. Rekening: '.$filters['account_number'] : '' }} | Dibuat {{ $printedAt }}</div>
 <div class="summary">
     {{ $summary['entries'] }} transaksi |
     Setoran Rp{{ number_format($summary['deposits'], 0, ',', '.') }} |

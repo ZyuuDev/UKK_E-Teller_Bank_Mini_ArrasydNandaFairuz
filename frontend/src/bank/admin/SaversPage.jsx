@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { api, money, useResource } from '../api'
+import { downloadSaverStatement } from '../downloadReport'
 import {
   Button,
   ConfirmDialog,
@@ -8,12 +9,285 @@ import {
   DataTable,
   DetailRow,
   Drawer,
+  FormField,
+  Input,
+  Modal,
   PageHeader,
   Pager,
   ResourceState,
   SearchField,
   Status,
 } from '../ui'
+
+function todayWib() {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Jakarta',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date())
+  const part = (name) => parts.find((item) => item.type === name).value
+  return `${part('year')}-${part('month')}-${part('day')}`
+}
+
+function SaverStatementModal({ saver, onClose }) {
+  const [month, setMonth] = useState(() => todayWib().slice(0, 7))
+  const [busy, setBusy] = useState(false)
+  const [data, setData] = useState(null)
+  const [error, setError] = useState('')
+  const [exportBusy, setExportBusy] = useState(false)
+
+  async function loadData(targetMonth) {
+    if (!saver) return
+    setBusy(true)
+    setError('')
+    try {
+      const res = await api(`/admin/savers/${saver.id}/statement?month=${targetMonth}`)
+      setData(res.data)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  useEffect(() => {
+    if (saver) {
+      loadData(month)
+    }
+  }, [saver, month])
+
+  async function handleExport(format) {
+    if (exportBusy || !saver) return
+    setExportBusy(true)
+    setError('')
+    try {
+      await downloadSaverStatement(saver.id, month, format)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setExportBusy(false)
+    }
+  }
+
+  function handlePrevMonth() {
+    const [y, m] = month.split('-').map(Number)
+    const prev = new Date(y, m - 2, 1)
+    const newMonth = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`
+    setMonth(newMonth)
+  }
+
+  function handleCurrentMonth() {
+    setMonth(todayWib().slice(0, 7))
+  }
+
+  return (
+    <Modal
+      open={!!saver}
+      title="Rekap Bulanan & Rekening Koran Nasabah"
+      busy={busy || exportBusy}
+      variant="modal bank-overlay--wide"
+      onClose={onClose}
+    >
+      {saver && (
+        <div style={{ maxWidth: '820px', width: '100%' }}>
+          <div
+            style={{
+              marginBottom: '16px',
+              padding: '14px 18px',
+              background: 'var(--surface-subdued, #f8fafc)',
+              borderRadius: '12px',
+              border: '1px solid var(--border, #e2e8f0)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '12px',
+            }}
+          >
+            <div>
+              <h3 style={{ margin: '0 0 4px', fontSize: '1.15rem', color: 'var(--text)' }}>
+                {saver.full_name}
+              </h3>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                No. Rekening: <strong>{saver.account_number}</strong> · NIS: <strong>{saver.student_number}</strong>
+                {saver.major ? ` · Jurusan: ${saver.major}` : ''}
+              </p>
+            </div>
+            <Status value={saver.account_status || 'active'} />
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              gap: '10px',
+              alignItems: 'flex-end',
+              flexWrap: 'wrap',
+              marginBottom: '16px',
+            }}
+          >
+            <div style={{ minWidth: '160px' }}>
+              <FormField label="Pilih Bulan Rekap">
+                <Input
+                  type="month"
+                  value={month}
+                  disabled={busy || exportBusy}
+                  onChange={(e) => setMonth(e.target.value)}
+                />
+              </FormField>
+            </div>
+            <div style={{ display: 'flex', gap: '6px', marginBottom: '4px' }}>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={busy || exportBusy}
+                onClick={handlePrevMonth}
+              >
+                Bulan Lalu
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={busy || exportBusy}
+                onClick={handleCurrentMonth}
+              >
+                Bulan Ini
+              </Button>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto', marginBottom: '4px' }}>
+              <Button
+                type="button"
+                variant="primary"
+                disabled={busy || exportBusy || !data}
+                onClick={() => handleExport('pdf')}
+              >
+                {exportBusy ? 'Mengunduh...' : '📄 Unduh PDF'}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={busy || exportBusy || !data}
+                onClick={() => handleExport('csv')}
+              >
+                📊 Unduh CSV
+              </Button>
+            </div>
+          </div>
+
+          <Notice error>{error}</Notice>
+
+          {busy && !data && (
+            <div style={{ padding: '36px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+              Memuat mutasi rekening...
+            </div>
+          )}
+
+          {data && (
+            <>
+              <div className="admin-cash-comparison" style={{ marginTop: 0, marginBottom: '16px' }}>
+                <div>
+                  <small>Saldo Awal Bulan</small>
+                  <strong style={{ color: 'var(--text)' }}>
+                    {money(data.summary.starting_balance)}
+                  </strong>
+                </div>
+                <div>
+                  <small>Total Setoran (Kredit)</small>
+                  <strong style={{ color: '#059669' }}>
+                    + {money(data.summary.total_deposits)}
+                  </strong>
+                </div>
+                <div>
+                  <small>Total Penarikan (Debet)</small>
+                  <strong style={{ color: '#dc2626' }}>
+                    - {money(data.summary.total_withdrawals)}
+                  </strong>
+                </div>
+                <div>
+                  <small>Saldo Akhir Bulan</small>
+                  <strong style={{ color: 'var(--action, #2563eb)' }}>
+                    {money(data.summary.ending_balance)}
+                  </strong>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '10px',
+                  fontSize: '0.85rem',
+                  color: 'var(--text-secondary)',
+                }}
+              >
+                <span>
+                  Periode: <strong>{data.period.label}</strong> ({data.summary.transaction_count} transaksi)
+                </span>
+                <span>
+                  Arus Kas Bersih:{' '}
+                  <strong style={{ color: data.summary.net_flow >= 0 ? '#059669' : '#dc2626' }}>
+                    {money(data.summary.net_flow)}
+                  </strong>
+                </span>
+              </div>
+
+              <DataTable
+                caption={`Mutasi rekening ${saver.account_number} bulan ${data.period.label}`}
+                rows={data.transactions}
+                columns={[
+                  ['date', 'Tanggal'],
+                  ['created_at', 'Waktu WIB'],
+                  ['ref', 'Referensi'],
+                  [
+                    'type_label',
+                    'Jenis Transaksi',
+                    null,
+                    (row) => (
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          background: row.transaction_type === 'Deposit' ? '#ecfdf5' : '#fef2f2',
+                          color: row.transaction_type === 'Deposit' ? '#065f46' : '#991b1b',
+                          border: `1px solid ${row.transaction_type === 'Deposit' ? '#a7f3d0' : '#fecaca'}`,
+                        }}
+                      >
+                        {row.type_label}
+                      </span>
+                    ),
+                  ],
+                  [
+                    'amount',
+                    'Nominal',
+                    null,
+                    (row) => (
+                      <span
+                        style={{
+                          fontWeight: 600,
+                          color: row.transaction_type === 'Deposit' ? '#059669' : '#dc2626',
+                        }}
+                      >
+                        {row.transaction_type === 'Deposit' ? '+ ' : '- '}
+                        {money(row.amount)}
+                      </span>
+                    ),
+                  ],
+                  ['balance_after', 'Saldo Sesudah', 'money'],
+                  ['teller_name', 'Teller'],
+                  ['notes', 'Catatan'],
+                ]}
+              />
+            </>
+          )}
+        </div>
+      )}
+    </Modal>
+  )
+}
 
 export default function SaversPage() {
   const [busy, setBusy] = useState(false)
@@ -25,6 +299,7 @@ export default function SaversPage() {
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
   const [selected, setSelected] = useState(null)
+  const [statementSaver, setStatementSaver] = useState(null)
   const list = useResource(`/admin/savers?page=${page}&q=${encodeURIComponent(query)}`)
   async function changeAccess() {
     if (!selected || busy) return
@@ -109,16 +384,26 @@ export default function SaversPage() {
               ],
             ]}
             actions={(row) => (
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setSelected(row)
-                  setError('')
-                  setConfirming(false)
-                }}
-              >
-                Detail dan QR
-              </Button>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setSelected(row)
+                    setError('')
+                    setConfirming(false)
+                  }}
+                >
+                  Detail dan QR
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setStatementSaver(row)
+                  }}
+                >
+                  Rekap Bulanan
+                </Button>
+              </div>
             )}
           />
           <Pager data={list.data} page={page} onChange={setPage} />
@@ -183,6 +468,15 @@ export default function SaversPage() {
                 }}
               >
                 Reset PIN (123456)
+              </Button>
+              <Button
+                variant="secondary"
+                disabled={busy}
+                onClick={() => {
+                  setStatementSaver(selected)
+                }}
+              >
+                Rekap Bulanan
               </Button>
             </div>
             <h3 className="admin-footnote">QR identitas rekening</h3>
@@ -259,6 +553,10 @@ export default function SaversPage() {
           sesudah akses diaktifkan.
         </p>
       </ConfirmDialog>
+      <SaverStatementModal
+        saver={statementSaver}
+        onClose={() => setStatementSaver(null)}
+      />
     </>
   )
 }

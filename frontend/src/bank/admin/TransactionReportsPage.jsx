@@ -66,6 +66,7 @@ export default function TransactionReportsPage({ isAdmin }) {
     date: todayWib(),
     month: todayWib().slice(0, 7),
     teller_id: '',
+    account_number: '',
   }))
   const [filters, setFilters] = useState(() => ({ period: 'daily', date: todayWib() }))
   const [page, setPage] = useState(1)
@@ -87,6 +88,7 @@ export default function TransactionReportsPage({ isAdmin }) {
       period: draft.period,
       ...(draft.period === 'daily' ? { date: draft.date } : { month: draft.month }),
       ...(isAdmin && draft.teller_id ? { teller_id: draft.teller_id } : {}),
+      ...(draft.account_number.trim() ? { account_number: draft.account_number.trim() } : {}),
     })
   }
   async function exportFile(format) {
@@ -162,6 +164,14 @@ export default function TransactionReportsPage({ isAdmin }) {
             onChange={(event) => update('teller_id', event.target.value)}
           />
         )}
+        <FormField label="No. rekening (opsional)">
+          <Input
+            value={draft.account_number}
+            disabled={busy}
+            onChange={(event) => update('account_number', event.target.value)}
+            placeholder="Semua nasabah / masukkan no. rek"
+          />
+        </FormField>
         <Button type="submit" disabled={busy}>
           Terapkan periode
         </Button>

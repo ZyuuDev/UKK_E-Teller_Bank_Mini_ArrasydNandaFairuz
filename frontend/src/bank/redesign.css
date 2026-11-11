@@ -699,6 +699,9 @@ button.bank-password-toggle:hover:not(:disabled),
   max-height: 100dvh;
   border-radius: 20px 0 0 20px;
 }
+.bank-overlay--wide {
+  width: min(880px, calc(100vw - 32px)) !important;
+}
 .bank-detail-list {
   margin: 0;
 }
