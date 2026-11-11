@@ -63,7 +63,7 @@ export default function AuthLayout({ title, description, children, onBack }) {
               <h2>
                 Tabungan Siswa,
                 <br />
-                Dikelola Lebih <span className="bank-auth__highlight">Modern</span> & Tertib.
+                Dikelola Lebih <span className="bank-auth__highlight">Aman</span> & Tertib.
               </h2>
               <p>
                 Ruang kerja terpadu petugas untuk tata kelola nasabah, transaksi loket
