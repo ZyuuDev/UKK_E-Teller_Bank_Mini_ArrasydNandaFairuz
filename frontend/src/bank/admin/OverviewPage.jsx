@@ -10,6 +10,7 @@ import {
   Layers,
   Receipt,
   RefreshCw,
+  ShieldCheck,
   TrendingUp,
   UserCheck,
   Users,
