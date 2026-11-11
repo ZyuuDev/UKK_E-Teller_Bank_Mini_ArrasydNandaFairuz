@@ -89,12 +89,33 @@ Route::get('deploy-migrate-{secret}', function (Request $request, $secret) {
             // Ignore cache errors
         }
 
+        $apkPublic = public_path('download/BankMini-SKANSABA.apk');
+        $apkBase = base_path('public/download/BankMini-SKANSABA.apk');
+        $syncStateFile = base_path('.ftp-deploy-sync-state.json');
+
         return response()->json([
             'status'         => 'success',
             'message'        => 'Migrasi dan inisialisasi akun berhasil dilakukan di server live!',
             'migrate_output' => $migrateOutput,
             'seed_output'    => $seedOutput,
             'storage_output' => $storageOutput,
+            'diagnostic'     => [
+                'public_path' => public_path(),
+                'base_path'   => base_path(),
+                'apk_public'  => [
+                    'path'   => $apkPublic,
+                    'exists' => file_exists($apkPublic),
+                    'size'   => file_exists($apkPublic) ? filesize($apkPublic) : null,
+                    'mtime'  => file_exists($apkPublic) ? date('Y-m-d H:i:s', filemtime($apkPublic)) : null,
+                ],
+                'apk_base'    => [
+                    'path'   => $apkBase,
+                    'exists' => file_exists($apkBase),
+                    'size'   => file_exists($apkBase) ? filesize($apkBase) : null,
+                    'mtime'  => file_exists($apkBase) ? date('Y-m-d H:i:s', filemtime($apkBase)) : null,
+                ],
+                'sync_state'  => file_exists($syncStateFile) ? json_decode(file_get_contents($syncStateFile), true) : null,
+            ],
         ]);
     } catch (\Throwable $e) {
         return response()->json([
