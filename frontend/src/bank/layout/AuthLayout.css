@@ -1,104 +1,641 @@
-.bank-auth {
-  display: grid;
-  grid-template-columns: minmax(320px, 0.9fr) minmax(0, 1.1fr);
-  min-height: 100dvh;
-  background: var(--surface);
+/* --------------------------------------------------------------------------
+ * AUTHENTICATION PAGES (LOGIN / RECOVERY / RESET)
+ * Redesigned to match the stunning Ultra-Modern Sky-Blue Glassmorphism
+ * Theme and Visual Identity of the SKANSABA Landing Page.
+ * -------------------------------------------------------------------------- */
+
+:root {
+  --auth-font-heading: 'Outfit', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --auth-font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --auth-primary: #2563eb;
+  --auth-primary-dark: #1d4ed8;
+  --auth-text-dark: #0f172a;
+  --auth-text-body: #334155;
+  --auth-text-muted: #64748b;
 }
+
+/* 1. Main Wrapper & Background Scene */
+.bank-auth-page {
+  position: relative;
+  min-height: 100dvh;
+  width: 100%;
+  overflow-x: hidden;
+  background: linear-gradient(180deg, #c6dcff 0%, #dceaff 26%, #cfe2ff 54%, #dceaff 78%, #eaf3ff 100%);
+  font-family: var(--auth-font-body);
+  color: var(--auth-text-dark);
+  display: flex;
+  flex-direction: column;
+}
+
+.bank-auth-bg-scene {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.bank-auth-bg-overlay {
+  position: absolute;
+  inset: 0;
+  background-image: url('/landing/hero-hd-bg.jpg');
+  background-size: cover;
+  background-position: center top;
+  opacity: 0.18;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.6) 80%, rgba(0, 0, 0, 0) 100%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.6) 80%, rgba(0, 0, 0, 0) 100%);
+}
+
+.bank-auth-bokeh {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(50px);
+  pointer-events: none;
+}
+
+.bank-auth-bokeh--top-left {
+  top: -80px;
+  left: -80px;
+  width: 380px;
+  height: 380px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.35) 0%, rgba(147, 197, 253, 0.2) 60%, transparent 80%);
+}
+
+.bank-auth-bokeh--bottom-right {
+  bottom: -100px;
+  right: -100px;
+  width: 480px;
+  height: 480px;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.25) 0%, rgba(191, 219, 254, 0.15) 60%, transparent 80%);
+}
+
+/* 2. Floating Top Nav Bar (Pill Glass) */
+.bank-auth-nav {
+  position: fixed;
+  top: 18px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  z-index: 40;
+  padding: 0 20px;
+}
+
+.bank-auth-nav__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  width: min(1040px, 100%);
+  background: rgba(235, 245, 255, 0.78);
+  backdrop-filter: blur(22px) saturate(190%);
+  -webkit-backdrop-filter: blur(22px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-radius: 9999px;
+  box-shadow: 0 12px 32px -10px rgba(30, 64, 175, 0.15), 0 2px 6px rgba(15, 23, 42, 0.04);
+  padding: 8px 16px 8px 12px;
+}
+
+.bank-auth-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-radius: 9999px;
+  padding: 7px 16px;
+  font-family: var(--auth-font-body);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--auth-primary);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bank-auth-back-btn:hover {
+  background: #ffffff;
+  color: var(--auth-primary-dark);
+  transform: translateX(-2px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+.bank-auth-nav__brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--auth-font-heading);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--auth-text-dark);
+}
+
+.bank-auth-nav__logo-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  border-radius: 50%;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+}
+
+.bank-auth-nav__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e3a8a;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 5px 12px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+}
+
+.bank-auth-nav__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+  animation: authPulse 2s infinite ease-in-out;
+}
+
+@keyframes authPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.18);
+    opacity: 0.75;
+  }
+}
+
+/* 3. Main Stage Container */
+.bank-auth-main {
+  position: relative;
+  z-index: 10;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 96px 20px 48px;
+}
+
+/* 4. Glassmorphism Card (Double Column) */
+.bank-auth-card {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 36px;
+  align-items: center;
+  width: min(1040px, 100%);
+  background: linear-gradient(145deg, rgba(240, 247, 255, 0.84) 0%, rgba(220, 235, 255, 0.68) 100%);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-radius: 32px;
+  box-shadow: 0 32px 80px -16px rgba(30, 64, 175, 0.18), 0 2px 10px rgba(15, 23, 42, 0.04), inset 0 1px 2px rgba(255, 255, 255, 0.95);
+  padding: 44px 48px;
+}
+
+/* Left Brand Showcase Column */
 .bank-auth__brand {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
   justify-content: space-between;
-  gap: 40px;
-  padding: 40px clamp(32px, 5vw, 80px);
-  background: linear-gradient(150deg, #f8fbff 0%, var(--subtle-blue) 100%);
-  border-right: 1px solid var(--border);
+  gap: 28px;
+  height: 100%;
 }
-.bank-auth__brand > img {
-  width: min(246px, 100%);
+
+.bank-auth__brand-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.bank-auth__brand-logo {
+  width: min(200px, 100%);
   height: auto;
   object-fit: contain;
+  filter: drop-shadow(0 6px 14px rgba(30, 64, 175, 0.08));
 }
-.bank-auth__brand h2 {
-  font-size: clamp(28px, 2.8vw, 42px);
-  line-height: 1.25;
-  letter-spacing: -0.025em;
-}
-.bank-auth__brand p:not(.bank-auth__eyebrow) {
-  color: var(--text-secondary);
-  max-width: 42ch;
-}
-.bank-auth__eyebrow {
-  text-transform: uppercase;
+
+.bank-auth__eyebrow-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(37, 99, 235, 0.1);
+  border: 1px solid rgba(37, 99, 235, 0.22);
+  color: var(--auth-primary);
+  border-radius: 9999px;
+  padding: 5px 13px;
   font-size: 11px;
-  letter-spacing: 0.1em;
   font-weight: 700;
-  color: var(--action);
-  margin-bottom: 16px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
-.bank-auth__content {
-  display: grid;
-  place-items: center;
-  min-width: 0;
-  padding: 48px 32px;
+
+.bank-auth__brand-body h2 {
+  font-family: var(--auth-font-heading);
+  font-size: clamp(26px, 2.5vw, 34px);
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: var(--auth-text-dark);
+  margin-bottom: 12px;
 }
-.bank-auth__form {
-  width: min(420px, 100%);
+
+.bank-auth__highlight {
+  color: var(--auth-primary);
+  position: relative;
+  display: inline-block;
 }
-.bank-auth__form > header {
-  margin-bottom: 28px;
+
+.bank-auth__brand-body p {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--auth-text-body);
+  max-width: 42ch;
+  margin-bottom: 24px;
 }
-.bank-auth__form > header h1 {
-  font-size: 28px;
-  line-height: 36px;
+
+.bank-auth__features {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
-.bank-auth__form > header p {
-  color: var(--text-secondary);
-  margin-bottom: 0;
+
+.bank-auth__feature-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-radius: 14px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e3a8a;
+  box-shadow: 0 4px 12px -3px rgba(30, 64, 175, 0.06);
 }
-.bank-auth__form .bank-form > button {
-  width: 100%;
+
+.bank-auth__feature-icon {
+  color: var(--auth-primary);
+  flex-shrink: 0;
 }
-.bank-auth__links {
-  display: grid;
-  gap: 12px;
-  margin-top: 20px;
-}
-.bank-auth__links > button {
-  width: 100%;
-}
-.bank-auth__footer {
-  margin: 32px 0 0;
+
+.bank-auth__brand-footer small {
   font-size: 12px;
-  color: var(--text-secondary);
+  font-weight: 600;
+  color: var(--auth-text-muted);
+  letter-spacing: 0.03em;
+}
+
+/* Right Content / Form Card */
+.bank-auth__content {
+  width: 100%;
+}
+
+.bank-auth__form-card {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.98);
+  border-radius: 26px;
+  box-shadow: 0 20px 40px -12px rgba(30, 64, 175, 0.14), inset 0 1px 2px rgba(255, 255, 255, 0.9);
+  padding: 38px 34px;
+}
+
+.bank-auth__form-logo-wrap {
+  display: none;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto 20px;
   text-align: center;
 }
-.bank-auth__mobile-logo {
-  display: none;
+
+.bank-auth__form-logo {
+  width: min(150px, 60%);
+  height: auto;
+  margin: 0 auto;
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(30, 64, 175, 0.08));
 }
-.bank-auth__email {
+
+.bank-auth__form-header h1 {
+  font-family: var(--auth-font-heading);
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--auth-text-dark);
+  margin-bottom: 6px;
+  letter-spacing: -0.015em;
+}
+
+.bank-auth__form-header p {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--auth-text-muted);
+  margin-bottom: 24px;
+}
+
+/* Form Controls Inside Auth */
+.bank-auth__form-body form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.bank-auth__form-body .bank-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bank-auth__form-body .bank-form-field label {
+  font-family: var(--auth-font-body);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--auth-text-body);
+}
+
+.bank-auth__form-body input {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(248, 250, 255, 0.95);
+  border: 1.5px solid rgba(191, 219, 254, 0.85);
+  border-radius: 14px;
+  padding: 12px 16px;
+  font-family: var(--auth-font-body);
+  font-size: 14.5px;
+  color: var(--auth-text-dark);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bank-auth__form-body input:focus {
+  background: #ffffff;
+  border-color: var(--auth-primary);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14);
+  outline: none;
+}
+
+.bank-auth__form-body input::placeholder {
+  color: #94a3b8;
+}
+
+/* Password Toggle Wrapper */
+.bank-auth__form-body .bank-password-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.bank-auth__form-body .bank-password-field input {
+  padding-right: 48px;
+}
+
+.bank-auth__form-body .bank-password-field button {
+  position: absolute;
+  right: 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #64748b;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: color 0.2s;
+}
+
+.bank-auth__form-body .bank-password-field button:hover {
+  color: var(--auth-primary);
+}
+
+/* Primary Button Styling */
+.bank-auth__form-body button[type="submit"],
+.bank-auth__form-body .bank-button--primary {
+  width: 100%;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  border: none;
+  border-radius: 14px;
+  padding: 14px 20px;
+  font-family: var(--auth-font-body);
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 10px 24px -6px rgba(37, 99, 235, 0.42);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  margin-top: 6px;
+}
+
+.bank-auth__form-body button[type="submit"]:hover:not(:disabled),
+.bank-auth__form-body .bank-button--primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px -6px rgba(37, 99, 235, 0.52);
+  filter: brightness(1.04);
+}
+
+.bank-auth__form-body button[type="submit"]:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.bank-auth__form-body button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Secondary Actions & Links */
+.bank-auth__links {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.bank-auth-text-link {
+  background: transparent;
+  border: none;
+  font-family: var(--auth-font-body);
+  font-size: 13.5px;
   font-weight: 600;
-  overflow-wrap: anywhere;
+  color: var(--auth-primary);
+  cursor: pointer;
+  padding: 6px 0;
+  text-align: center;
+  transition: all 0.2s ease;
 }
-@media (max-width: 767px) {
-  .bank-auth {
-    display: block;
+
+.bank-auth-text-link:hover {
+  color: var(--auth-primary-dark);
+  text-decoration: underline;
+}
+
+.bank-auth__links button.bank-button--secondary {
+  width: 100%;
+  background: rgba(241, 245, 249, 0.8);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-family: var(--auth-font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bank-auth__links button.bank-button--secondary:hover:not(:disabled) {
+  background: #ffffff;
+  color: var(--auth-primary);
+  border-color: #93c5fd;
+}
+
+.bank-auth__links small,
+.bank-auth__hint {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--auth-text-muted);
+  text-align: center;
+  margin: 0;
+}
+
+/* Alerts / Notice */
+.bank-auth .bank-notice,
+.bank-auth-main .bank-notice {
+  background: rgba(254, 242, 242, 0.92);
+  border: 1px solid rgba(254, 202, 202, 0.95);
+  border-radius: 14px;
+  color: #991b1b;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 18px;
+  backdrop-filter: blur(8px);
+}
+
+.bank-auth .bank-notice:not(.bank-notice--error),
+.bank-auth-main .bank-notice:not(.bank-notice--error) {
+  background: rgba(240, 253, 244, 0.92);
+  border: 1px solid rgba(187, 247, 208, 0.95);
+  color: #166534;
+}
+
+/* Form Footer */
+.bank-auth__form-footer {
+  margin-top: 24px;
+  text-align: center;
+}
+
+.bank-auth__form-footer p {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+/* Email Pill Highlight in Reset Phase */
+.bank-auth__email {
+  display: inline-block;
+  background: rgba(238, 242, 255, 0.9);
+  border: 1px solid rgba(199, 210, 254, 0.8);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-family: var(--auth-font-body);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--auth-primary-dark);
+  margin-bottom: 14px;
+}
+
+/* --------------------------------------------------------------------------
+ * RESPONSIVE BREAKPOINTS (TABLET & MOBILE)
+ * -------------------------------------------------------------------------- */
+@media (max-width: 960px) {
+  .bank-auth-card {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    padding: 32px 28px;
+    border-radius: 28px;
   }
+
   .bank-auth__brand {
     display: none;
   }
-  .bank-auth__content {
-    min-height: 100dvh;
-    padding: 24px 20px 40px;
+
+  .bank-auth__form-logo-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto 20px;
+    text-align: center;
   }
-  .bank-auth__mobile-logo {
-    display: block;
+
+  .bank-auth__form-logo {
+    width: min(145px, 50%);
     height: auto;
-    margin: 0 auto 24px;
+    margin: 0 auto;
+    display: block;
     object-fit: contain;
   }
-  .bank-auth__form > header h1 {
-    font-size: 24px;
-    line-height: 32px;
+
+  .bank-auth__form-header {
+    text-align: center;
+  }
+
+  .bank-auth__form-header h1 {
+    text-align: center;
+  }
+
+  .bank-auth__form-header p {
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .bank-auth__form-card {
+    padding: 28px 24px;
+    border-radius: 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  .bank-auth-nav {
+    top: 12px;
+    padding: 0 12px;
+  }
+
+  .bank-auth-nav__badge {
+    display: none;
+  }
+
+  .bank-auth-main {
+    padding: 78px 12px 32px;
+  }
+
+  .bank-auth-card {
+    padding: 16px;
+    border-radius: 24px;
+    background: linear-gradient(145deg, rgba(240, 247, 255, 0.92) 0%, rgba(220, 235, 255, 0.8) 100%);
+  }
+
+  .bank-auth__form-card {
+    padding: 22px 18px;
+    border-radius: 18px;
+  }
+
+  .bank-auth__form-header h1 {
+    font-size: 22px;
   }
 }

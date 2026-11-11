@@ -44,6 +44,7 @@ export function LoginPage({ onAuth, onBack }) {
     <AuthLayout
       title="Masuk ke Bank Mini"
       description="Gunakan akun petugas untuk melanjutkan pekerjaan."
+      onBack={onBack}
     >
       <Notice error>{error}</Notice>
       <form className="bank-form" onSubmit={submit}>
@@ -53,6 +54,7 @@ export function LoginPage({ onAuth, onBack }) {
             autoComplete="username"
             autoCapitalize="none"
             spellCheck={false}
+            placeholder="Masukkan username petugas"
             required
             disabled={busy}
           />
@@ -62,27 +64,28 @@ export function LoginPage({ onAuth, onBack }) {
             name="password"
             type="password"
             autoComplete="current-password"
+            placeholder="••••••••••••"
             required
             disabled={busy}
           />
         </FormField>
         <Button type="submit" busy={busy}>
-          {busy ? 'Memeriksa akun...' : 'Masuk'}
+          {busy ? 'Memeriksa akun...' : 'Masuk ke Sistem'}
         </Button>
       </form>
       <div className="bank-auth__links">
-        {onBack && (
-          <Button variant="secondary" disabled={busy} onClick={onBack}>
-            ← Kembali ke Halaman Utama
-          </Button>
-        )}
-        <Button variant="secondary" disabled={busy} onClick={() => setRecovery(true)}>
-          Lupa password?
-        </Button>
-        <small>
+        <button
+          type="button"
+          className="bank-auth-text-link"
+          disabled={busy}
+          onClick={() => setRecovery(true)}
+        >
+          Lupa password akun?
+        </button>
+        <p className="bank-auth__hint">
           Admin dan teller memulihkan password sendiri menggunakan email akun yang sudah
           diverifikasi melalui menu Kelola akun.
-        </small>
+        </p>
       </div>
     </AuthLayout>
   )
@@ -202,6 +205,7 @@ export function RecoveryPage({ onBack }) {
     <AuthLayout
       title={phase === 'done' ? 'Password diperbarui' : 'Pulihkan akun'}
       description="Gunakan email akun yang sudah diverifikasi. Berlaku untuk admin, teller, dan siswa. Jika email belum terverifikasi, hubungi pengelola sekolah."
+      onBack={onBack}
     >
       <Notice>{message}</Notice>
       <Notice error>{error}</Notice>
