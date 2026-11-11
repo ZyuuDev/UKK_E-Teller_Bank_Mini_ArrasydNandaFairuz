@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api, money, useResource } from './api'
 import { ReportsPage } from './AdminPages'
 import {
@@ -1299,20 +1299,33 @@ export default function TellerPage({ tellerId }) {
   const [reportsVersion, setReportsVersion] = useState(0)
   const [statusMessage, setStatusMessage] = useState('')
 
-  const activeStatus = statusRes.data?.data?.status || 'buka'
+  const [overrideStatus, setOverrideStatus] = useState(null)
+  const serverStatus = statusRes.data?.status || statusRes.data?.data?.status
+  const activeStatus = overrideStatus || serverStatus || 'buka'
+
+  useEffect(() => {
+    if (serverStatus) {
+      setOverrideStatus(serverStatus)
+    }
+  }, [serverStatus])
+
   const current = (sessions.data || []).find((row) => row.date === todayWib())
   const canCreate = !sessions.loading && !sessions.error && current?.status === 'open'
 
   async function updateStatus(nextStatus) {
     if (nextStatus === activeStatus) return
+    setOverrideStatus(nextStatus)
     try {
-      await api('/teller/service-status', {
+      const res = await api('/teller/service-status', {
         method: 'POST',
         body: { status: nextStatus },
       })
-      setStatusMessage(`Status layanan loket diubah menjadi ${nextStatus.toUpperCase()}.`)
+      const confirmedStatus = res?.data?.status || nextStatus
+      setOverrideStatus(confirmedStatus)
+      setStatusMessage(`Status layanan loket diubah menjadi ${confirmedStatus.toUpperCase()}.`)
       statusRes.refresh()
     } catch (err) {
+      setOverrideStatus(serverStatus || 'buka')
       setStatusMessage(err.message)
     }
   }

@@ -36,3 +36,7 @@ Thumbs.db
 /PANDUAN_*.md
 /Soal UKK_Bank Mini.docx
 /SRS_ETeller_Bank_Mini.md
+
+# Scratch helper scripts
+scratch*.py
+frontend/src/bank/scratch*.py
