@@ -28,7 +28,7 @@ import AppShell from './bank/layout/AppShell'
 import AccountSettingsPage from './bank/AccountSettingsPage'
 import LandingPage from './bank/LandingPage'
 import './bank/teacher-revisions.css'
-import { Button, Drawer, Modal, Notice, PageHeader } from './bank/ui'
+import { Button, Drawer, Modal, Notice, PageHeader, ToastContainer } from './bank/ui'
 import { useIdleTimeout } from './bank/useIdleTimeout'
 import './bank/redesign.css'
 
@@ -203,6 +203,7 @@ export default function App() {
     if (view === 'login') {
       return (
         <>
+          <ToastContainer />
           <Notice error>{error}</Notice>
           <LoginPage
             onBack={() => {
@@ -250,9 +251,11 @@ export default function App() {
   const isAdmin = user.role === 'admin'
   const Page = pages[page].component
   return (
-    <AppShell
-      user={user}
-      navigation={
+    <>
+      <ToastContainer />
+      <AppShell
+        user={user}
+        navigation={
         isAdmin
           ? navigation
           : [
@@ -297,5 +300,6 @@ export default function App() {
       </Drawer>
       {idleWarning}
     </AppShell>
-  )
+  </>
+)
 }

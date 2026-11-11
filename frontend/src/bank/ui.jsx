@@ -1,6 +1,18 @@
 import { cloneElement, isValidElement, useEffect, useId, useRef, useState } from 'react'
-import { Eye, EyeOff, LoaderCircle, Search, X } from 'lucide-react'
+import {
+  AlertCircle,
+  AlertTriangle,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  HelpCircle,
+  Info,
+  LoaderCircle,
+  Search,
+  X,
+} from 'lucide-react'
 import { money } from './api'
+export { toast, ToastContainer } from './toast'
 
 const labels = {
   active: 'Aktif',
@@ -395,15 +407,39 @@ export function Status({ value, tone, children }) {
   )
 }
 
-export function Notice({ error, children }) {
-  return children ? (
+export function Notice({ error, tone, title, children }) {
+  if (!children) return null
+
+  const effectiveTone =
+    error || tone === 'danger' || tone === 'error'
+      ? 'error'
+      : tone === 'success'
+      ? 'success'
+      : tone === 'warning'
+      ? 'warning'
+      : 'info'
+
+  const IconComponent =
+    effectiveTone === 'error'
+      ? AlertCircle
+      : effectiveTone === 'success'
+      ? CheckCircle2
+      : effectiveTone === 'warning'
+      ? AlertTriangle
+      : Info
+
+  return (
     <div
-      className={`bank-notice ${error ? 'bank-notice--error' : ''}`}
-      role={error ? 'alert' : 'status'}
+      className={`bank-notice bank-notice--${effectiveTone}`}
+      role={effectiveTone === 'error' ? 'alert' : 'status'}
     >
-      {children}
+      <IconComponent size={20} className="bank-notice__icon" aria-hidden="true" />
+      <div className="bank-notice__content">
+        {title && <strong className="bank-notice__title">{title}</strong>}
+        <div>{children}</div>
+      </div>
     </div>
-  ) : null
+  )
 }
 
 export function EmptyState({
@@ -507,7 +543,15 @@ export function ConfirmDialog({
   const handleClose = onClose || onCancel
   return (
     <Modal open={open} title={title} busy={busy} onClose={handleClose}>
-      {children}
+      <div className="bank-confirm-dialog-content">
+        <div
+          className={`bank-confirm-icon ${danger ? 'bank-confirm-icon--danger' : 'bank-confirm-icon--info'}`}
+          aria-hidden="true"
+        >
+          {danger ? <AlertTriangle size={24} /> : <HelpCircle size={24} />}
+        </div>
+        <div className="bank-confirm-body">{children}</div>
+      </div>
       <Notice error>{error}</Notice>
       <div className="bank-actions bank-actions--end">
         <Button variant="secondary" disabled={busy} onClick={handleClose}>
