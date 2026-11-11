@@ -1,33 +1,33 @@
 :root {
   color-scheme: light;
-  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-  color: #111b35;
-  background: #f7f9fc;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #0f172a;
+  background: #f0f6ff;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 
-  --font-body: 'Inter', 'Segoe UI', Arial, sans-serif;
-  --font-heading: 'Plus Jakarta Sans', 'Inter', 'Segoe UI', sans-serif;
-  --brand: #1677ff;
-  --action: #095ce5;
-  --action-hover: #084ec4;
-  --text: #111b35;
-  --text-secondary: #52627a;
-  --background: #f7f9fc;
+  --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-heading: 'Outfit', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --brand: #2563eb;
+  --action: #2563eb;
+  --action-hover: #1d4ed8;
+  --text: #0f172a;
+  --text-secondary: #475569;
+  --background: #f0f6ff;
   --surface: #ffffff;
-  --surface-subdued: #fafbfd;
-  --subtle-blue: #eef5ff;
-  --border: #e7ecf3;
-  --control-border: #7b8ba5;
-  --success-text: #0d8059;
-  --success-tint: #eaf8f2;
-  --warning-text: #a65b00;
-  --warning-tint: #fff4df;
-  --danger-text: #b4233c;
-  --danger-tint: #fff0f2;
-  --radius-control: 10px;
-  --radius-card: 16px;
-  --radius-overlay: 20px;
+  --surface-subdued: #f8fbff;
+  --subtle-blue: #edf5ff;
+  --border: #e2e8f0;
+  --control-border: #94a3b8;
+  --success-text: #059669;
+  --success-tint: #ecfdf5;
+  --warning-text: #d97706;
+  --warning-tint: #fffbeb;
+  --danger-text: #dc2626;
+  --danger-tint: #fef2f2;
+  --radius-control: 14px;
+  --radius-card: 20px;
+  --radius-overlay: 24px;
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -212,25 +212,29 @@ textarea {
   max-width: 100%;
   box-sizing: border-box;
   min-height: 44px;
-  padding: 10px 12px;
-  border: 1px solid var(--control-border);
+  padding: 10px 14px;
+  border: 1px solid rgba(191, 219, 254, 0.85);
   border-radius: var(--radius-control);
-  background: var(--surface);
+  background: rgba(255, 255, 255, 0.95);
   color: var(--text);
   font-size: 14px;
-  font-weight: 400;
+  font-weight: 500;
   line-height: 22px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: #65758c;
+  color: #94a3b8;
 }
 
 input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--action);
+  box-shadow: 0 0 0 3.5px rgba(37, 99, 235, 0.14);
+  background: #ffffff;
+  outline: none;
 }
 
 input[readonly] {
