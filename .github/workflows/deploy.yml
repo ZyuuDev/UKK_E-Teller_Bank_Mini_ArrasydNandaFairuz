@@ -45,11 +45,13 @@ jobs:
       - name: 🚀 Sync Files via FTP to DomaiNesia
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.FTP_SERVER }}
+          server: ${{ secrets.FTP_SERVER || '202.155.137.35' }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           port: ${{ secrets.FTP_PORT || 21 }}
-          protocol: ftp
+          protocol: ${{ secrets.FTP_PROTOCOL || 'ftps' }}
+          security: loose
+          timeout: 120000
           server-dir: ${{ secrets.FTP_SERVER_DIR || '/' }}
           exclude: |
             **/.git*
