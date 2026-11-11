@@ -1,0 +1,475 @@
+/* ==========================================================================
+   Kalkulator Pecahan Uang Fisik (Cash Denomination Counter)
+   Bank Mini SMKN 1 Bantul - Standar UI Profesional Anti-Slop
+   ========================================================================== */
+
+.cash-calc {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: var(--radius-card, 18px);
+  padding: 20px;
+  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.04);
+}
+
+.cash-calc--modal {
+  border: none;
+  padding: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+/* Header & Tab Selector */
+.cash-calc__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+}
+
+.cash-calc__title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cash-calc__icon-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.12) 0%, rgba(30, 64, 175, 0.18) 100%);
+  color: var(--brand, #2563eb);
+}
+
+.cash-calc__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text, #0f172a);
+}
+
+.cash-calc__subtitle {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--text-secondary, #64748b);
+}
+
+.cash-calc__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Mode Switcher Tabs */
+.cash-mode-tabs {
+  display: inline-flex;
+  background: var(--surface-subdued, #f1f5f9);
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid var(--border, #e2e8f0);
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.cash-mode-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, #64748b);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.cash-mode-tab:hover:not(.cash-mode-tab--active) {
+  color: var(--text, #0f172a);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.cash-mode-tab--active {
+  background: var(--surface, #ffffff);
+  color: var(--brand, #2563eb);
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+}
+
+/* Denomination Grids */
+.cash-calc__sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.cash-calc__section {
+  background: var(--surface-subdued, #f8fafc);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cash-calc__section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.cash-calc__section-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text, #0f172a);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.cash-calc__section-badge {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 1px solid var(--border, #e2e8f0);
+  color: var(--text-secondary, #475569);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Denomination Table / Row List */
+.cash-denom-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.cash-denom-row {
+  display: grid;
+  grid-template-columns: 120px 120px 1fr;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 10px;
+  padding: 7px 10px;
+  transition: all 0.15s ease;
+}
+
+.cash-denom-row:hover,
+.cash-denom-row:focus-within {
+  border-color: rgba(37, 99, 235, 0.5);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.06);
+}
+
+.cash-denom-row--active {
+  background: linear-gradient(90deg, rgba(239, 246, 255, 0.6) 0%, #ffffff 100%);
+  border-color: rgba(37, 99, 235, 0.4);
+}
+
+/* Label & Badges */
+.cash-denom-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.cash-denom-badge {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cash-denom-badge--100k { background: #e11d48; box-shadow: 0 0 0 2px rgba(225, 29, 72, 0.2); }
+.cash-denom-badge--50k  { background: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); }
+.cash-denom-badge--20k  { background: #059669; box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.2); }
+.cash-denom-badge--10k  { background: #7c3aed; box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.2); }
+.cash-denom-badge--5k   { background: #b45309; box-shadow: 0 0 0 2px rgba(180, 83, 9, 0.2); }
+.cash-denom-badge--2k   { background: #475569; box-shadow: 0 0 0 2px rgba(71, 85, 105, 0.2); }
+.cash-denom-badge--1k   { background: #65a30d; box-shadow: 0 0 0 2px rgba(101, 163, 13, 0.2); }
+.cash-denom-badge--coin { background: #64748b; box-shadow: 0 0 0 2px rgba(100, 116, 139, 0.2); }
+
+/* Stepper & Input */
+.cash-denom-stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border, #cbd5e1);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.cash-denom-step-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 30px;
+  border: none;
+  background: var(--surface-subdued, #f8fafc);
+  color: var(--text-secondary, #475569);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.cash-denom-step-btn:hover:not(:disabled) {
+  background: #e2e8f0;
+  color: var(--text, #0f172a);
+}
+
+.cash-denom-step-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.cash-denom-input {
+  width: 56px;
+  height: 30px;
+  border: none;
+  border-inline: 1px solid var(--border, #cbd5e1);
+  text-align: center;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text, #0f172a);
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  padding: 0 4px;
+  outline: none;
+  background: #ffffff;
+}
+
+.cash-denom-input:focus {
+  background: #f0f7ff;
+  color: var(--brand, #2563eb);
+}
+
+/* Chrome/Safari number arrows removal */
+.cash-denom-input::-webkit-outer-spin-button,
+.cash-denom-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.cash-denom-input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* Subtotal per row */
+.cash-denom-subtotal {
+  text-align: right;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary, #64748b);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cash-denom-row--active .cash-denom-subtotal {
+  color: var(--brand, #1e40af);
+}
+
+/* Radar & Discrepancy Indicator */
+.cash-calc__radar {
+  border-radius: 14px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.cash-calc__radar--balanced {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+}
+
+.cash-calc__radar--surplus {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+}
+
+.cash-calc__radar--shortage {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.cash-calc__radar-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cash-calc__radar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cash-calc__radar--balanced .cash-calc__radar-icon {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.cash-calc__radar--surplus .cash-calc__radar-icon {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+.cash-calc__radar--shortage .cash-calc__radar-icon {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.cash-calc__radar-text strong {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.cash-calc__radar-text span {
+  display: block;
+  font-size: 12px;
+  opacity: 0.9;
+  margin-top: 1px;
+}
+
+.cash-calc__radar-badge {
+  font-size: 13px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  padding: 5px 12px;
+  border-radius: 9999px;
+  letter-spacing: 0.02em;
+}
+
+.cash-calc__radar--balanced .cash-calc__radar-badge {
+  background: #059669;
+  color: #ffffff;
+}
+
+.cash-calc__radar--surplus .cash-calc__radar-badge {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.cash-calc__radar--shortage .cash-calc__radar-badge {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+/* Grand Total Banner */
+.cash-calc__summary-card {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: #ffffff;
+  border-radius: 14px;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  box-shadow: 0 10px 24px -6px rgba(15, 23, 42, 0.2);
+}
+
+.cash-calc__summary-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cash-calc__summary-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cash-calc__summary-counts {
+  font-size: 12.5px;
+  color: #cbd5e1;
+}
+
+.cash-calc__summary-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.cash-calc__grand-total {
+  font-size: 24px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #38bdf8;
+  letter-spacing: -0.02em;
+}
+
+.cash-calc__expected-sub {
+  font-size: 11.5px;
+  color: #94a3b8;
+}
+
+/* Modal sizing tweak */
+.cash-calc-modal-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: calc(85vh - 120px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+@media (max-width: 640px) {
+  .cash-calc__sections {
+    grid-template-columns: 1fr;
+  }
+  .cash-denom-row {
+    grid-template-columns: 100px 110px 1fr;
+    gap: 6px;
+    padding: 6px 8px;
+  }
+  .cash-denom-input {
+    width: 44px;
+  }
+  .cash-calc__summary-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .cash-calc__summary-right {
+    align-items: flex-start;
+  }
+}

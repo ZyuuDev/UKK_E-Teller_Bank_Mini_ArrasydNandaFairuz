@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Banknote, Calculator } from 'lucide-react'
 import { api, money, useResource } from './api'
 import { ReportsPage } from './AdminPages'
 import {
@@ -16,6 +17,7 @@ import {
   StatCard,
   Status,
 } from './ui'
+import { CashDenominationCalculator, CashCalculatorModal } from './CashDenominationCalculator'
 import QrScanner from '../components/QrScanner'
 import { printReceipt } from './printing'
 import './teller.css'
@@ -984,18 +986,26 @@ function OpenSession({ sessions, blocked, onChanged }) {
 function CloseSession({ sessions, pending, onChanged }) {
   const [sessionId, setSessionId] = useState('')
   const [cash, setCash] = useState('')
+  const [calcMode, setCalcMode] = useState('calculator')
   const [review, setReview] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const openSessions = (sessions.data || []).filter((row) => row.status === 'open')
   const selected = openSessions.find((row) => String(row.id) === sessionId)
+
   function prepare(event) {
     event.preventDefault()
     if (!selected || pending || sessions.loading || sessions.error) return
-    setReview({ ...selected, actual: Number(cash) })
+    const actualNum = Number(cash)
+    if (!Number.isFinite(actualNum) || actualNum < 0) {
+      setError('Masukkan nominal uang fisik yang valid.')
+      return
+    }
+    setReview({ ...selected, actual: actualNum })
     setError('')
   }
+
   async function submit(event) {
     event.preventDefault()
     if (!review || pending) return
@@ -1023,6 +1033,7 @@ function CloseSession({ sessions, pending, onChanged }) {
       setBusy(false)
     }
   }
+
   return (
     <section className="bank-panel">
       <h2>Tutup kas</h2>
@@ -1077,25 +1088,64 @@ function CloseSession({ sessions, pending, onChanged }) {
                       {money(selected.expected_closing_balance)}
                     </DetailRow>
                   </dl>
-                  <FormField
-                    label="Uang fisik aktual di laci (rupiah)"
-                    hint="Hitung uang fisik di laci tanpa memperhitungkan selisih."
-                  >
-                    <Input
-                      type="number"
-                      min={0}
-                      max={9000000000000}
-                      step={1}
-                      value={cash}
-                      onChange={(event) => setCash(event.target.value)}
-                      required
-                      disabled={busy}
+
+                  <div className="cash-mode-tabs" role="tablist" aria-label="Metode perhitungan kas fisik">
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={calcMode === 'calculator'}
+                      className={`cash-mode-tab ${calcMode === 'calculator' ? 'cash-mode-tab--active' : ''}`}
+                      onClick={() => setCalcMode('calculator')}
+                    >
+                      <Calculator size={15} aria-hidden="true" />
+                      <span>Hitung Pecahan (Rinci)</span>
+                    </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={calcMode === 'manual'}
+                      className={`cash-mode-tab ${calcMode === 'manual' ? 'cash-mode-tab--active' : ''}`}
+                      onClick={() => setCalcMode('manual')}
+                    >
+                      <Banknote size={15} aria-hidden="true" />
+                      <span>Input Nominal Langsung</span>
+                    </button>
+                  </div>
+
+                  {calcMode === 'calculator' ? (
+                    <CashDenominationCalculator
+                      expectedAmount={selected.expected_closing_balance}
+                      storageKey={`bank_cash_closing_${selected.id}`}
+                      onChange={(grandTotal) => {
+                        setCash(grandTotal > 0 ? String(grandTotal) : '')
+                      }}
                     />
-                  </FormField>
-                  <MoneyPreview value={cash} />
-                  <Button type="submit" disabled={busy || !cash}>
-                    Lanjutkan ke pemeriksaan tutup kas
-                  </Button>
+                  ) : (
+                    <>
+                      <FormField
+                        label="Uang fisik aktual di laci (rupiah)"
+                        hint="Hitung uang fisik di laci tanpa memperhitungkan selisih."
+                      >
+                        <Input
+                          type="number"
+                          min={0}
+                          max={9000000000000}
+                          step={1}
+                          value={cash}
+                          onChange={(event) => setCash(event.target.value)}
+                          required
+                          disabled={busy}
+                        />
+                      </FormField>
+                      <MoneyPreview value={cash} />
+                    </>
+                  )}
+
+                  <div style={{ marginTop: '16px' }}>
+                    <Button type="submit" disabled={busy || cash === '' || Number(cash) < 0}>
+                      Lanjutkan ke pemeriksaan tutup kas
+                    </Button>
+                  </div>
                 </>
               )}
             </form>
@@ -1114,6 +1164,17 @@ function CloseSession({ sessions, pending, onChanged }) {
               {money(review.actual - Number(review.expected_closing_balance))}
             </DetailRow>
           </dl>
+          {review.actual === Number(review.expected_closing_balance) ? (
+            <Notice tone="success">
+              Kas fisik seimbang sempurna dengan catatan sistem (Selisih Rp 0). Pengajuan siap diproses administrator.
+            </Notice>
+          ) : (
+            <Notice tone="warning">
+              Perhatian: Terdapat selisih kas fisik sebesar{' '}
+              <strong>{money(review.actual - Number(review.expected_closing_balance))}</strong>.
+              Sesi akan berstatus &quot;disputed&quot; sampai diperiksa administrator.
+            </Notice>
+          )}
           <Notice>
             Backend menghitung kembali selisih saat pengajuan dan mengunci sesi. Periksa
             slip dan uang fisik sebelum melanjutkan.
@@ -1296,6 +1357,7 @@ export default function TellerPage({ tellerId }) {
   const statusRes = useResource('/teller/service-status')
   const [area, setArea] = useState('session')
   const [scannerOpen, setScannerOpen] = useState(false)
+  const [calcModalOpen, setCalcModalOpen] = useState(false)
   const [reportsVersion, setReportsVersion] = useState(0)
   const [statusMessage, setStatusMessage] = useState('')
 
@@ -1394,6 +1456,14 @@ export default function TellerPage({ tellerId }) {
         </div>
         <div className="bank-actions">
           <Button
+            variant="secondary"
+            onClick={() => setCalcModalOpen(true)}
+            title="Buka kalkulator pecahan uang fisik laci"
+          >
+            <Calculator size={16} aria-hidden="true" />
+            <span>Kalkulator Kas</span>
+          </Button>
+          <Button
             disabled={tx.busy || !!tx.pending}
             onClick={() => setScannerOpen(true)}
           >
@@ -1489,6 +1559,12 @@ export default function TellerPage({ tellerId }) {
           />
         )}
       </Modal>
+      <CashCalculatorModal
+        open={calcModalOpen}
+        onClose={() => setCalcModalOpen(false)}
+        expectedAmount={current ? current.expected_closing_balance : null}
+        storageKey="bank_teller_drawer_calc"
+      />
       <Modal
         open={!!tx.receipt}
         title="Bukti transaksi"
