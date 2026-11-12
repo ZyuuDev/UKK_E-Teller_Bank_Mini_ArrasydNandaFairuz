@@ -28,6 +28,8 @@ class CashSessionService
                 ->where('status', 'approved')
                 ->sum('amount');
         }
+        $latestReport = DailyReconciliation::where('cash_session_id', $session->id)->first();
+
         return [
             'id' => $session->id,
             'date' => $session->date,
@@ -37,6 +39,8 @@ class CashSessionService
             'total_withdrawals' => $withdrawals,
             'total_additional_cash' => $additional,
             'expected_closing_balance' => (int) $session->opening_balance + $additional + $deposits - $withdrawals,
+            'reconciliation_status' => $latestReport?->status,
+            'rejection_reason' => $latestReport?->rejection_reason,
         ];
     }
 
@@ -81,6 +85,12 @@ class CashSessionService
 
         $query = DB::table('cash_sessions')
             ->where('status', 'open')
+            ->whereNotExists(function ($sub) {
+                $sub->select(DB::raw(1))
+                    ->from('daily_reconciliations')
+                    ->whereColumn('daily_reconciliations.cash_session_id', 'cash_sessions.id')
+                    ->where('daily_reconciliations.status', 'rejected');
+            })
             ->where(function ($q) use ($today, $isPastClosing) {
                 // Sesi hari sebelumnya yang belum ditutup
                 $q->where('date', '<', $today);

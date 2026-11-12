@@ -16,7 +16,7 @@ class ReconciliationController extends Controller
     {
         $sessions->autoCloseForgottenSessions();
         $request->validate(['status' => 'nullable|in:pending,approved,disputed,rejected']);
-        $query = DailyReconciliation::with('teller:id,name', 'approver:id,name')->orderByDesc('date')->orderByDesc('id');
+        $query = DailyReconciliation::with('teller:id,name', 'approver:id,name', 'rejector:id,name')->orderByDesc('date')->orderByDesc('id');
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }

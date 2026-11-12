@@ -152,4 +152,99 @@ class CashSessionAutoCloseTest extends TestCase
         $this->assertSame('07:30 - 17:00 WIB', $response->json('data.operating_hours'));
         $this->assertSame('17:00 WIB', $response->json('data.close_time'));
     }
+
+    public function test_auto_closed_session_can_be_rejected_by_admin_and_is_not_re_closed_by_system(): void
+    {
+        $pastDate = now('Asia/Jakarta')->subDays(2)->toDateString();
+
+        $sessionId = DB::table('cash_sessions')->insertGetId([
+            'teller_id' => $this->teller->id,
+            'date' => $pastDate,
+            'opening_balance' => 500000,
+            'status' => 'open',
+            'created_at' => now()->subDays(2),
+            'updated_at' => now()->subDays(2),
+        ]);
+
+        $service = app(CashSessionService::class);
+        $service->autoCloseForgottenSessions();
+
+        $report = DailyReconciliation::where('cash_session_id', $sessionId)->firstOrFail();
+        $this->assertSame('disputed', $report->status);
+
+        // Admin rejects (returns) the report so teller can correct actual cash
+        $response = $this->actingAs($this->admin, 'sanctum')->postJson("/api/admin/reconciliations/{$report->id}/reject", [
+            'reason' => 'Uang fisik di loket belum dihitung, mohon hitung dan ajukan ulang.',
+        ]);
+        $response->assertOk();
+
+        $report->refresh();
+        $this->assertSame('rejected', $report->status);
+        $this->assertSame($this->admin->id, $report->rejected_by);
+        $this->assertSame('Uang fisik di loket belum dihitung, mohon hitung dan ajukan ulang.', $report->rejection_reason);
+
+        $session = DB::table('cash_sessions')->where('id', $sessionId)->first();
+        $this->assertSame('open', $session->status);
+
+        // System auto-close runs again (e.g. on page refresh or next cron)
+        $closed = $service->autoCloseForgottenSessions();
+        $this->assertSame(0, $closed);
+
+        // Session and report must NOT be overwritten back to submitted / disputed
+        $sessionAfter = DB::table('cash_sessions')->where('id', $sessionId)->first();
+        $this->assertSame('open', $sessionAfter->status);
+
+        $reportAfter = DailyReconciliation::where('cash_session_id', $sessionId)->firstOrFail();
+        $this->assertSame('rejected', $reportAfter->status);
+        $this->assertSame('Uang fisik di loket belum dihitung, mohon hitung dan ajukan ulang.', $reportAfter->rejection_reason);
+    }
+
+    public function test_teller_can_resubmit_rejected_auto_closed_session_and_admin_can_approve(): void
+    {
+        $pastDate = now('Asia/Jakarta')->subDays(1)->toDateString();
+
+        $sessionId = DB::table('cash_sessions')->insertGetId([
+            'teller_id' => $this->teller->id,
+            'date' => $pastDate,
+            'opening_balance' => 300000,
+            'status' => 'open',
+            'created_at' => now()->subDays(1),
+            'updated_at' => now()->subDays(1),
+        ]);
+
+        $service = app(CashSessionService::class);
+        $service->autoCloseForgottenSessions();
+
+        $report = DailyReconciliation::where('cash_session_id', $sessionId)->firstOrFail();
+        $this->assertSame('disputed', $report->status);
+
+        // Admin returns the report
+        $this->actingAs($this->admin, 'sanctum')->postJson("/api/admin/reconciliations/{$report->id}/reject", [
+            'reason' => 'Periksa fisik kas kembali.',
+        ])->assertOk();
+
+        // Teller resubmits with actual physical cash matching expected balance (300000)
+        $submitResponse = $this->actingAs($this->teller, 'sanctum')->postJson("/api/teller/cash-sessions/{$sessionId}/submit", [
+            'actual_cash_on_hand' => 300000,
+        ]);
+        $submitResponse->assertCreated();
+
+        $report->refresh();
+        $this->assertSame('pending', $report->status);
+        $this->assertSame(0, (int) $report->discrepancy);
+        $this->assertSame(300000, (int) $report->actual_cash_on_hand);
+
+        // Admin now approves the reconciliation
+        $approveResponse = $this->actingAs($this->admin, 'sanctum')->postJson("/api/admin/reconciliations/{$report->id}/approve");
+        $approveResponse->assertOk();
+
+        $session = DB::table('cash_sessions')->where('id', $sessionId)->first();
+        $this->assertSame('approved', $session->status);
+
+        // Teller is now free to open today's session without being blocked
+        $openTodayResponse = $this->actingAs($this->teller, 'sanctum')->postJson('/api/teller/cash-sessions', [
+            'opening_balance' => 500000,
+        ]);
+        $openTodayResponse->assertCreated();
+    }
 }

@@ -433,10 +433,12 @@ export default function ReportsPage({ teller = false }) {
             </div>
             <dl className="bank-detail-list">
               <DetailRow label="Pemeriksa">
-                {selected.approver?.name ?? selected.approved_by}
+                {selected.status === 'rejected'
+                  ? (selected.rejector?.name ?? selected.rejected_by ?? '-')
+                  : (selected.approver?.name ?? selected.approved_by ?? '-')}
               </DetailRow>
               <DetailRow label="Catatan penolakan">
-                {selected.rejection_reason}
+                {selected.rejection_reason || '-'}
               </DetailRow>
             </dl>
             {!hasSession && (

@@ -994,6 +994,12 @@ function CloseSession({ sessions, pending, onChanged }) {
   const openSessions = (sessions.data || []).filter((row) => row.status === 'open')
   const selected = openSessions.find((row) => String(row.id) === sessionId)
 
+  useEffect(() => {
+    if (openSessions.length === 1 && !sessionId) {
+      setSessionId(String(openSessions[0].id))
+    }
+  }, [openSessions, sessionId])
+
   function prepare(event) {
     event.preventDefault()
     if (!selected || pending || sessions.loading || sessions.error) return
@@ -1039,6 +1045,12 @@ function CloseSession({ sessions, pending, onChanged }) {
       <h2>Tutup kas</h2>
       <Notice error>{error}</Notice>
       <Notice>{message}</Notice>
+      {selected?.reconciliation_status === 'rejected' && (
+        <Notice error>
+          <strong>Sesi Kas Dikembalikan oleh Admin:</strong>
+          <p>{selected.rejection_reason || 'Silakan hitung ulang uang fisik kas di laci dan ajukan tutup kas kembali.'}</p>
+        </Notice>
+      )}
       {pending && (
         <Notice>
           Selesaikan pemeriksaan transaksi tertunda pada area Pelayanan transaksi
@@ -1373,6 +1385,9 @@ export default function TellerPage({ tellerId }) {
 
   const current = (sessions.data || []).find((row) => row.date === todayWib())
   const canCreate = !sessions.loading && !sessions.error && current?.status === 'open'
+  const rejectedSession = (sessions.data || []).find(
+    (row) => row.date < todayWib() && row.status === 'open' && row.reconciliation_status === 'rejected'
+  )
 
   async function updateStatus(nextStatus) {
     if (nextStatus === activeStatus) return
@@ -1508,6 +1523,17 @@ export default function TellerPage({ tellerId }) {
         </section>
       )}
       {statusMessage && <Notice>{statusMessage}</Notice>}
+      {rejectedSession && area !== 'close' && (
+        <Notice error>
+          Sesi kas tanggal <strong>{rejectedSession.date}</strong> dikembalikan oleh Admin ({rejectedSession.rejection_reason || 'Perlu perbaikan laporan fisik kas'}).
+          Harap selesaikan tutup kas untuk sesi tersebut agar dapat membuka loket kas hari ini.
+          <div style={{ marginTop: '8px' }}>
+            <Button variant="secondary" onClick={() => setArea('close')}>
+              Buka Tutup Kas Sekarang
+            </Button>
+          </div>
+        </Notice>
+      )}
       {tx.pending && area !== 'transaction' && (
         <Notice>
           Ada transaksi yang belum selesai dikonfirmasi.{' '}

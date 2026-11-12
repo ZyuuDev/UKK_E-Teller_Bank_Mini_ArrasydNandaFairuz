@@ -32,4 +32,9 @@ class DailyReconciliation extends Model
     {
         return $this->belongsTo(User::class, 'approved_by');
     }
+
+    public function rejector()
+    {
+        return $this->belongsTo(User::class, 'rejected_by');
+    }
 }
